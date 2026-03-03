@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mt-4">اضافة قالب متابعة</h1>
+
+<form method="POST">
+
+<div class="form-group">
+<label>اسم القالب</label>
+<input name="template_name" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>نص الرسالة</label>
+<textarea name="template_body"
+class="form-control"
+rows="6"></textarea>
+</div>
+
+<button class="btn btn-primary">
+اضافة
+</button>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}قوالب المتابعة{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-4">قوالب المتابعة</h1>
+
+<a class="btn btn-primary mt-3 mb-3"
+href="{{ url_for('new_followup_template') }}">
+اضافة قالب
+</a>
+
+<table class="table mt-4">
+
+<thead>
+<tr>
+<th>ID</th>
+<th>اسم القالب</th>
+<th>تعديل</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for template in templates %}
+<tr>
+
+<td>{{ template.id }}</td>
+<td>{{ template.template_name }}</td>
+
+<td>
+<a href="{{ url_for('edit_followup_template',
+template_id=template.id) }}">
+تعديل
+</a>
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% endblock %}

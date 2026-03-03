@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}الموتوسيكلات{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-4">الموتوسيكلات</h1>
+
+<a class="btn btn-primary mt-3 mb-3" href="{{ url_for('new_motor') }}">
+اضافة موتوسيكل
+</a>
+
+<table class="table mt-4">
+
+<thead>
+<tr>
+<th>ID</th>
+<th>الاسم العربي</th>
+<th>الشركة</th>
+<th>النوع</th>
+<th>السعر</th>
+<th>التفاصيل</th>
+<th>تعديل</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for motor in motors %}
+<tr>
+
+<td>{{ motor.id }}</td>
+<td>{{ motor.arabic_name }}</td>
+<td>{{ motor.company }}</td>
+<td>{{ motor.moto_type }}</td>
+<td>{{ motor.price }}</td>
+
+<td>
+<a href="{{ url_for('edit_motor', motor_id=motor.id) }}">
+عرض
+</a>
+</td>
+
+<td>
+<a href="{{ url_for('edit_motor', motor_id=motor.id) }}">
+تعديل
+</a>
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+
+</table>
+
+{% endblock %}

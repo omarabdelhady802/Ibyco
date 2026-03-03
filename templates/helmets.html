@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}الخوذات{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-4">الخوذات</h1>
+
+<a class="btn btn-primary mt-3 mb-3" href="{{ url_for('new_helmet') }}">
+اضافة خوذة
+</a>
+
+<table class="table mt-4">
+<thead>
+<tr>
+<th>الاسم العربي</th>
+<th>الشركة</th>
+<th>السعر</th>
+<th>الحالة</th>
+<th>تعديل</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for helmet in helmets %}
+<tr>
+<td>{{ helmet.arabic_name }}</td>
+<td>{{ helmet.company }}</td>
+<td>{{ helmet.price }}</td>
+<td>{{ helmet.status }}</td>
+
+<td>
+<a href="{{ url_for('edit_helmet', helmet_id=helmet.id) }}">
+تعديل
+</a>
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+
+{% endblock %}
