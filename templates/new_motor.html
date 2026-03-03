@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mt-4">اضافة موتوسيكل جديد</h1>
+
+<form method="POST">
+
+<div class="form-group">
+<label>الاسم الانجليزي</label>
+<input name="english_name" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>الاسم العربي</label>
+<input name="arabic_name" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>الشركة</label>
+<input name="company" class="form-control">
+</div>
+
+<div class="form-group">
+<label>الوكالة</label>
+<input name="agency_name" class="form-control">
+</div>
+
+<div class="form-group">
+<label>نوع الموتوسيكل</label>
+<input name="moto_type" class="form-control">
+</div>
+
+<div class="form-group">
+<label>السعر</label>
+<input name="price" type="number" class="form-control">
+</div>
+
+<div class="form-group">
+<label>سعة المحرك</label>
+<input name="engin_capacity" class="form-control">
+</div>
+
+<div class="form-group">
+<label>سعة الوقود</label>
+<input name="fule_capacity" class="form-control">
+</div>
+
+<div class="form-group">
+<label>نوع المحرك</label>
+<input name="engin_type" class="form-control">
+</div>
+
+<div class="form-group">
+<label>نوع ناقل الحركة</label>
+<input name="transmission_type" class="form-control">
+</div>
+
+<div class="form-group">
+<label>السرعة القصوى</label>
+<input name="max_speed" class="form-control">
+</div>
+
+<div class="form-group">
+<label>نوع الفرامل</label>
+<input name="brake_type" class="form-control">
+</div>
+
+<div class="form-group">
+<label>الالوان</label>
+<input name="colors" class="form-control">
+</div>
+
+<div class="form-group">
+<label>ملاحظات</label>
+<input name="notes" class="form-control">
+</div>
+
+<div class="form-group">
+<label>الحالة</label>
+<input name="status" class="form-control">
+</div>
+
+<div class="form-group">
+<label>رابط الصورة</label>
+<input name="img_url" class="form-control">
+</div>
+
+<div class="form-group">
+<label>متاح للبيع</label>
+<select name="is_available" class="form-control">
+<option value="1">نعم</option>
+<option value="0">لا</option>
+</select>
+</div>
+
+<button class="btn btn-primary">
+اضافة
+</button>
+
+</form>
+
+{% endblock %}

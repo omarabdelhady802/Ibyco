@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mt-4">تعديل خوذة</h1>
+
+<form method="POST">
+
+<div class="form-group">
+<label>الاسم الانجليزي</label>
+<input type="text" name="english_name"
+value="{{ helmet.english_name }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>الاسم العربي</label>
+<input type="text" name="arabic_name"
+value="{{ helmet.arabic_name }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>الشركة</label>
+<input type="text" name="company"
+value="{{ helmet.company }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>السعر</label>
+<input type="number" name="price"
+value="{{ helmet.price }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>النوع</label>
+<input type="text" name="helmet_type"
+value="{{ helmet.helmet_type }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>الالوان</label>
+<input type="text" name="colors"
+value="{{ helmet.colors }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>ملاحظات</label>
+<input type="text" name="notes"
+value="{{ helmet.notes }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>الحالة</label>
+<input type="text" name="status"
+value="{{ helmet.status }}"
+class="form-control">
+</div>
+
+<div class="form-group">
+<label>رابط الصورة</label>
+<input type="text" name="img_url"
+value="{{ helmet.img_url }}"
+class="form-control">
+</div>
+
+<button type="submit" class="btn btn-primary">
+حفظ
+</button>
+
+</form>
+
+{% endblock %}
