@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mt-4">اضافة خطة تقسيط</h1>
+
+<form method="POST">
+
+<div class="form-group">
+<label>اقل نسبه مقدم</label>
+<input name="min_down_payment" type="number"
+class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>اعلي نسبه مقدم</label>
+<input name="max_down_payment" type="number"
+class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>اقل عدد شهور</label>
+<input name="min_months" type="number"
+class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>اعلي عدد شهور</label>
+<input name="max_months" type="number"
+class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>النسبة الكلية (%)</label>
+<input name="percentage" type="number" step="0.01"
+class="form-control" required>
+</div>
+
+<button class="btn btn-primary">
+اضافة
+</button>
+
+</form>
+
+{% endblock %}

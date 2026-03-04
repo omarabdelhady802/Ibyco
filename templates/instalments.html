@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mt-4">خطط التقسيط</h1>
+
+<a class="btn btn-primary mt-3 mb-3"
+href="{{ url_for('new_instalment') }}">
+اضافة خطة
+</a>
+
+<table class="table mt-4">
+
+<thead>
+<tr>
+<th>ID</th>
+<th>المقدم من(%)</th>
+<th>المقدم الي(%)</th>
+<th>اقل عدد الشهور</th>
+<th>اقصي عدد الشهور</th>
+<th>النسبة(%)</th>
+<th>(%)نسبة الشهر</th>
+<th>تعديل</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for i in instalments %}
+<tr>
+
+<td>{{ i.id }}</td>
+<td>{{ i.min_down_payment }}</td>
+<td>{{ i.max_down_payment }}</td>
+<td>{{ i.min_months }}</td>
+<td>{{ i.max_months }}</td>
+<td>{{ i.percentage }} %</td>
+<td>{{ i.percentage_per_month }} %</td>
+
+<td>
+<a href="{{ url_for('edit_instalment',
+instalment_id=i.id) }}">
+تعديل
+</a>
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+
+{% endblock %}

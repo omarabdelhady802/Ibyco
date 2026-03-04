@@ -6,6 +6,7 @@ from models.models import *
 from services import UserServices 
 from services.followup_template_services import FollowUpTemplateServices
 from services.helmet_services import HelmetServices
+from services.instalment_services import InstalmentServices
 from services.motor_services import MotorServices
 
 
@@ -297,6 +298,79 @@ def edit_followup_template(template_id):
     )
 
 # end of followup template routes
+
+
+
+
+# start routes for installments
+
+# this route for display installment plans
+@app.route('/instalments')
+@login_required
+def instalments():
+
+    instalments = InstalmentServices.get_instalments()
+
+    return render_template(
+        "instalments.html",
+        instalments=instalments
+    )
+
+
+# this route for add new instalment plan 
+@app.route('/instalments/new', methods=['GET','POST'])
+@login_required
+def new_instalment():
+
+    if request.method == "POST":
+
+        instalment, msg = InstalmentServices.create_instalment(
+            request.form
+        )
+
+        if instalment:
+            flash(msg, "success")
+        else:
+            flash(msg, "danger")
+
+        return redirect(url_for("instalments"))
+
+    return render_template("new_instalment.html")
+
+
+# this route for edit plan
+@app.route('/instalments/edit/<int:instalment_id>', methods=['GET','POST'])
+@login_required
+def edit_instalment(instalment_id):
+
+    instalment = InstalmentServices.get_instalment_by_id(instalment_id)
+
+    if not instalment:
+        flash("الخطة غير موجودة", "danger")
+        return redirect(url_for("instalments"))
+
+    if request.method == "POST":
+
+        instalment, msg = InstalmentServices.update_instalment(
+            instalment_id,
+            request.form
+        )
+
+        if instalment:
+            flash(msg, "success")
+        else:
+            flash(msg, "danger")
+
+        return redirect(url_for("instalments"))
+
+    return render_template(
+        "edit_instalment.html",
+        instalment=instalment
+    )
+
+
+# end routes for instalments
+
 
 
 # this route for logout

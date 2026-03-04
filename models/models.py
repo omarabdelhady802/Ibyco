@@ -169,3 +169,32 @@ class Helmets(db.Model):
 
 
 
+
+# =========================
+# Instalments Table
+# =========================
+class Instalments(db.Model):
+    __tablename__ = "instalments"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    min_down_payment = db.Column(db.Integer) # min down payment
+    max_down_payment = db.Column(db.Integer) # max down payment
+    
+    min_months = db.Column(db.Integer) # min number of months for this paln
+    max_months = db.Column(db.Integer) # max number of months for this paln 
+    
+    percentage = db.Column(db.Float) # percentage for this plan
+    percentage_per_month = db.Column(db.Float) # percentage for each month based (total_percentage/number_of_max_months)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        if self.percentage and self.max_months:
+            self.percentage_per_month = round(
+                self.percentage / self.max_months, 4
+            )
+        else:
+            self.percentage_per_month = 0
+    
+
