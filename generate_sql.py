@@ -122,7 +122,31 @@ CREATE TABLE IF NOT EXISTS helmets (
     img_url VARCHAR(200)
 );
 
+-- =========================
+-- Instalments Table
+-- =========================
+CREATE TABLE IF NOT EXISTS instalments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    min_down_payment INTEGER,
+    max_down_payment INTEGER,
+    min_months INTEGER,
+    max_months INTEGER,
+    percentage FLOAT,
+    percentage_per_month FLOAT
+);
+
 """
+
+# Instalment plans data (from the Ibyco dashboard)
+INSTALMENT_INSERTS = [
+    "INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 0, 3, 0.0, 0.0);",
+    "INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 3, 6, 14.0, 2.3333);",
+    "INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 6, 12, 28.0, 2.3333);",
+    "INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 12, 18, 50.0, 2.7778);",
+    "INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 18, 24, 69.0, 2.875);",
+    "INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (30, 50, 0, 24, 72.0, 3.0);",
+    "INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (0, 30, 0, 24, 80.0, 3.3333);",
+]
 
 
 def esc(val):
@@ -212,9 +236,16 @@ def generate():
         for stmt in helmet_inserts:
             f.write(stmt + "\n")
 
+        f.write("\n-- =========================\n")
+        f.write("-- Instalments Data\n")
+        f.write("-- =========================\n")
+        for stmt in INSTALMENT_INSERTS:
+            f.write(stmt + "\n")
+
     print(f"Generated {SQL_PATH}")
-    print(f"  Motors:  {len(motor_inserts)} rows")
-    print(f"  Helmets: {len(helmet_inserts)} rows")
+    print(f"  Motors:       {len(motor_inserts)} rows")
+    print(f"  Helmets:      {len(helmet_inserts)} rows")
+    print(f"  Instalments:  {len(INSTALMENT_INSERTS)} rows")
 
 
 if __name__ == "__main__":
