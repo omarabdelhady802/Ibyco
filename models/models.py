@@ -192,7 +192,7 @@ class Instalments(db.Model):
 
         if self.percentage and self.max_months:
             self.percentage_per_month = round(
-                self.percentage / self.max_months, 4
+                float(self.percentage) / int(self.max_months), 4
             )
         else:
             self.percentage_per_month = 0
