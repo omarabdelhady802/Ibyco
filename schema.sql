@@ -179,3 +179,16 @@ INSERT INTO helmets (english_name, arabic_name, company, price, helmet_type, col
 INSERT INTO helmets (english_name, arabic_name, company, price, helmet_type, colors, notes, is_available, status, img_url) VALUES ('kids full', 'خوز اطفال كامله', 'kids', 1000, 'كامله', 'جميع الالوان', 'رائعه للاطفال', 1, 'متاح', 'https://midoalex2025.sirv.com/46.png');
 INSERT INTO helmets (english_name, arabic_name, company, price, helmet_type, colors, notes, is_available, status, img_url) VALUES ('mrc full', 'ام ار سى كامله', 'mrc', 3000, 'كامله', 'جميع الالوان', 'عصريه وقويه و مناسبه للجميع', 1, 'متاح', 'https://midoalex2025.sirv.com/47.webp');
 INSERT INTO helmets (english_name, arabic_name, company, price, helmet_type, colors, notes, is_available, status, img_url) VALUES ('spider', 'خوزه اطفال', 'spider', 1200, 'كامله', 'احمر و ازرق', 'مناسبه للاطفال', 1, 'متاح', 'https://midoalex2025.sirv.com/48.jpeg');
+
+-- =========================
+-- Installment Plans Table
+-- =========================
+-- interest_rate is a percentage of the vehicle price (e.g. 15.5 = 15.5%)
+-- No down payment. monthly_payment = price * (1 + interest_rate/100) / months
+CREATE TABLE IF NOT EXISTS installment (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    motor_english_name VARCHAR(100) NOT NULL,
+    months INTEGER NOT NULL,
+    interest_rate REAL NOT NULL,
+    UNIQUE(motor_english_name, months)
+);
