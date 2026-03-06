@@ -107,6 +107,19 @@ CREATE TABLE IF NOT EXISTS helmets (
 );
 
 -- =========================
+-- Instalments Table
+-- =========================
+CREATE TABLE IF NOT EXISTS instalments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    min_down_payment INTEGER,
+    max_down_payment INTEGER,
+    min_months INTEGER,
+    max_months INTEGER,
+    percentage FLOAT,
+    percentage_per_month FLOAT
+);
+
+-- =========================
 -- Motors Data
 -- =========================
 INSERT INTO motors (english_name, arabic_name, company, agency_name, moto_type, price, engin_capacity, fule_capacity, engin_type, transmission_type, max_speed, brake_type, colors, notes, is_available, status, img_url) VALUES ('SUPPER LIGHT200', 'سوبر لايت', 'كيواى', 'ابو حوا', 'موتوسيكل', 70000, NULL, NULL, 'بنزين', 'يدوي', '110 كم/س', NULL, 'اسود', NULL, 1, 'متاح', 'https://midoalex2025.sirv.com/9.png');
@@ -181,14 +194,12 @@ INSERT INTO helmets (english_name, arabic_name, company, price, helmet_type, col
 INSERT INTO helmets (english_name, arabic_name, company, price, helmet_type, colors, notes, is_available, status, img_url) VALUES ('spider', 'خوزه اطفال', 'spider', 1200, 'كامله', 'احمر و ازرق', 'مناسبه للاطفال', 1, 'متاح', 'https://midoalex2025.sirv.com/48.jpeg');
 
 -- =========================
--- Installment Plans Table
+-- Instalments Data
 -- =========================
--- interest_rate is a percentage of the vehicle price (e.g. 15.5 = 15.5%)
--- No down payment. monthly_payment = price * (1 + interest_rate/100) / months
-CREATE TABLE IF NOT EXISTS installment (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    motor_english_name VARCHAR(100) NOT NULL,
-    months INTEGER NOT NULL,
-    interest_rate REAL NOT NULL,
-    UNIQUE(motor_english_name, months)
-);
+INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 0, 3, 0.0, 0.0);
+INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 3, 6, 14.0, 2.3333);
+INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 6, 12, 28.0, 2.3333);
+INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 12, 18, 50.0, 2.7778);
+INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (50, 100, 18, 24, 69.0, 2.875);
+INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (30, 50, 0, 24, 72.0, 3.0);
+INSERT INTO instalments (min_down_payment, max_down_payment, min_months, max_months, percentage, percentage_per_month) VALUES (0, 30, 0, 24, 80.0, 3.3333);
