@@ -1,5 +1,5 @@
 from flask_login import UserMixin
-from datetime import datetime, timedelta , time 
+from datetime import datetime, timedelta , time
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -13,8 +13,8 @@ class Users(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(50), nullable=False)
-   
-    
+
+
 
 
 # =========================
@@ -27,7 +27,7 @@ class Client(db.Model):
 
     phone_number = db.Column(db.String(30), unique=True, nullable=False)
 
-    chat_summary = db.Column(db.Text) # this col to keep the history 
+    chat_summary = db.Column(db.Text) # this col to keep the history
 
     last_user_reply = db.Column(db.Text) # the current message
     last_bot_reply = db.Column(db.Text) # this col to enhance the context
@@ -36,9 +36,9 @@ class Client(db.Model):
     last_user_message_at = db.Column(db.DateTime) # this col to detect the users dosent reply
     last_bot_message_at = db.Column(db.DateTime) # this col to avoid spamming
 
-    info = db.Column(db.Text) # this col for info about products the client bought (it will be fill by human ) 
+    info = db.Column(db.Text) # this col for info about products the client bought (it will be fill by human )
 
-    has_purchased = db.Column(db.Boolean, default=False) # this col to know the client bought or not (it will be fill by human ) 
+    has_purchased = db.Column(db.Boolean, default=False) # this col to know the client bought or not (it will be fill by human )
     purchase_date = db.Column(db.DateTime) # this col we use in followup schadualing
 
     is_active = db.Column(db.Boolean, default=True) # this col help with users dont need to send any message
@@ -58,7 +58,7 @@ class FollowUpTemplate(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    template_name = db.Column(db.String(100)) #followup message name 
+    template_name = db.Column(db.String(100)) #followup message name
     template_body = db.Column(db.Text) # followup message body
 
     followups = db.relationship("FollowUp", backref="template", lazy=True)
@@ -80,7 +80,7 @@ class FollowUp(db.Model):
 
     created_by_employee = db.Column(db.String(100)) # the name of emploee who creates the followup
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 # =========================
@@ -91,13 +91,13 @@ class Complaint(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    client_id = db.Column(db.Integer, db.ForeignKey("clients.id")) 
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"))
 
     message_text = db.Column(db.Text) # the user message
 
     is_resolved = db.Column(db.Boolean, default=False) # human will check it
 
-    resolved_at = db.Column(db.DateTime) 
+    resolved_at = db.Column(db.DateTime)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -112,10 +112,10 @@ class Motors(db.Model):
 
     english_name = db.Column(db.String(40))
     arabic_name = db.Column(db.String(40))
-    
+
     company = db.Column(db.String(40))
     agency_name = db.Column(db.String(40))
-    
+
     moto_type = db.Column(db.String(40)) #(motorcycle or scoter)
     price = db.Column(db.Integer)
 
@@ -128,9 +128,9 @@ class Motors(db.Model):
     brake_type = db.Column(db.String(40))
     colors = db.Column(db.String(100))
     notes = db.Column(db.String(100))
-    
-    
-    is_available = db.Column(db.Boolean, default=True) 
+
+
+    is_available = db.Column(db.Boolean, default=True)
     status = db.Column(db.String(40)) # (new or used)
 
 
@@ -148,19 +148,19 @@ class Helmets(db.Model):
 
     english_name = db.Column(db.String(40))
     arabic_name = db.Column(db.String(40))
-    
+
     company = db.Column(db.String(40))
-    
+
     price = db.Column(db.Integer)
 
 
-   
+
     helmet_type = db.Column(db.String(40))
     colors = db.Column(db.String(100))
     notes = db.Column(db.String(100))
-    
-    
-    is_available = db.Column(db.Boolean, default=True) 
+
+
+    is_available = db.Column(db.Boolean, default=True)
     status = db.Column(db.String(40)) # (new or used)
 
 
@@ -180,10 +180,10 @@ class Instalments(db.Model):
 
     min_down_payment = db.Column(db.Integer) # min down payment
     max_down_payment = db.Column(db.Integer) # max down payment
-    
+
     min_months = db.Column(db.Integer) # min number of months for this paln
-    max_months = db.Column(db.Integer) # max number of months for this paln 
-    
+    max_months = db.Column(db.Integer) # max number of months for this paln
+
     percentage = db.Column(db.Float) # percentage for this plan
     percentage_per_month = db.Column(db.Float) # percentage for each month based (total_percentage/number_of_max_months)
 
@@ -196,5 +196,3 @@ class Instalments(db.Model):
             )
         else:
             self.percentage_per_month = 0
-    
-

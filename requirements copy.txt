@@ -1,0 +1,19 @@
+fastapi>=0.115.0
+uvicorn>=0.32.0
+langgraph>=0.2.0
+langchain>=0.3.0
+langchain-huggingface>=0.1.0
+langchain-core>=0.3.0
+openpyxl>=3.1.0
+pandas>=2.2.0
+python-dotenv>=1.0.0
+huggingface_hub>=0.25.0
+langchain_ollama>=0.3.10
+pytest>=26.0.1
+requests
+httpx
+openpyxl
+numpy>=1.26.0
+dotenv
+langchain_openai
+# Vector search: requires `ollama pull nomic-embed-text` before first use

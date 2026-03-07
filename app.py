@@ -3,18 +3,20 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta , time ,date
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from models.models import *
-from services import UserServices 
-from services.followup_template_services import FollowUpTemplateServices
-from services.helmet_services import HelmetServices
-from services.instalment_services import InstalmentServices
-from services.motor_services import MotorServices
+from dashboard_services import UserServices
+from dashboard_services.followup_template_services import FollowUpTemplateServices
+from dashboard_services.helmet_services import HelmetServices
+from dashboard_services.instalment_services import InstalmentServices
+from dashboard_services.motor_services import MotorServices
 
 
 
 
 # configrations app
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Ibyco.db'
+import os
+_db_path = os.path.join(os.path.dirname(__file__), "instance", "Ibyco.db")
+app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{_db_path}'
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False  # Disable auto-commit
