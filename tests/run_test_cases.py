@@ -17,10 +17,10 @@ import textwrap
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-from fastapi.testclient import TestClient
-from agent_app import app
+from app import app
 
-client = TestClient(app)
+app.config['TESTING'] = True
+client = app.test_client()
 
 # ── Colour helpers (Windows-safe) ─────────────────────────────────────────────
 RESET  = "\033[0m"
@@ -122,8 +122,8 @@ def _reset(uid: str):
 
 def _send(uid: str, message: str) -> dict:
     r = client.post("/api/chat", json={"user_id": uid, "message": message})
-    assert r.status_code == 200, f"HTTP {r.status_code}: {r.text}"
-    return r.json()
+    assert r.status_code == 200, f"HTTP {r.status_code}: {r.data.decode()}"
+    return r.get_json()
 
 
 # ── Test cases ────────────────────────────────────────────────────────────────

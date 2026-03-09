@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, request, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta , time ,date
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -375,6 +375,7 @@ def edit_instalment(instalment_id):
 
 
 
+
 # this route for logout
 @app.route('/logout')
 @login_required
@@ -386,9 +387,27 @@ def logout():
 
 
 
+# ── Agent Chat API ──────────────────────────────────────────────────
+
+from services.chat_service import chat as agent_chat, reset_session as agent_reset
+
+
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    data = request.get_json()
+    result = agent_chat(data.get("user_id", "unknown"), data.get("message", ""))
+    return jsonify(result)
+
+
+@app.route('/api/chat/<user_id>', methods=['DELETE'])
+def api_reset_session(user_id):
+    agent_reset(user_id)
+    return jsonify({"status": "ok", "message": f"Session for {user_id} cleared."})
+
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(host= "0.0.0.0" , port = 5000 ,debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 

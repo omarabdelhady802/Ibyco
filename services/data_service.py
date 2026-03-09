@@ -3,8 +3,7 @@ import math
 from typing import Optional, List
 
 from sqlalchemy import func
-from models.database import Session
-from models.models import Motors
+from models.models import db, Motors
 
 
 def _motor_to_dict(motor: Motors) -> dict:
@@ -39,33 +38,29 @@ def get_vehicles(
     sort_by: str = None,
     ascending: bool = True,
 ) -> List[dict]:
-    session = Session()
-    try:
-        query = session.query(Motors).filter(Motors.is_available == True)
+    query = Motors.query.filter(Motors.is_available == True)
 
-        if filters:
-            if filters.get("type"):
-                query = query.filter(Motors.moto_type.ilike(f"%{filters['type']}%"))
-            if filters.get("max_price"):
-                query = query.filter(Motors.price <= float(filters["max_price"]))
-            if filters.get("min_price"):
-                query = query.filter(Motors.price >= float(filters["min_price"]))
-            if filters.get("company"):
-                query = query.filter(Motors.company.ilike(f"%{filters['company']}%"))
-            if filters.get("transmission"):
-                query = query.filter(Motors.transmission_type.ilike(f"%{filters['transmission']}%"))
-            if filters.get("condition"):
-                query = query.filter(Motors.status.ilike(f"%{filters['condition']}%"))
+    if filters:
+        if filters.get("type"):
+            query = query.filter(Motors.moto_type.ilike(f"%{filters['type']}%"))
+        if filters.get("max_price"):
+            query = query.filter(Motors.price <= float(filters["max_price"]))
+        if filters.get("min_price"):
+            query = query.filter(Motors.price >= float(filters["min_price"]))
+        if filters.get("company"):
+            query = query.filter(Motors.company.ilike(f"%{filters['company']}%"))
+        if filters.get("transmission"):
+            query = query.filter(Motors.transmission_type.ilike(f"%{filters['transmission']}%"))
+        if filters.get("condition"):
+            query = query.filter(Motors.status.ilike(f"%{filters['condition']}%"))
 
-        col_map = {"price": Motors.price, "engine_cc": Motors.engin_capacity}
-        if sort_by and sort_by in col_map:
-            col = col_map[sort_by]
-            query = query.order_by(col.asc() if ascending else col.desc())
+    col_map = {"price": Motors.price, "engine_cc": Motors.engin_capacity}
+    if sort_by and sort_by in col_map:
+        col = col_map[sort_by]
+        query = query.order_by(col.asc() if ascending else col.desc())
 
-        rows = query.limit(limit).all()
-        return [_motor_to_dict(r) for r in rows]
-    finally:
-        Session.remove()
+    rows = query.limit(limit).all()
+    return [_motor_to_dict(r) for r in rows]
 
 
 def _normalize(s: str) -> str:
@@ -79,111 +74,99 @@ def get_vehicle_by_name(name: str) -> Optional[dict]:
     3. MAJORITY (>=2/3) of words match across English + Arabic + company tokens.
     4. Normalized match (strip punctuation/spaces then substring check).
     """
-    session = Session()
-    try:
-        q = name.lower().strip()
+    q = name.lower().strip()
 
-        # Tier 1 — SQL LIKE
-        row = (
-            session.query(Motors)
-            .filter(
-                (func.lower(Motors.english_name).like(f"%{q}%"))
-                | (Motors.arabic_name.like(f"%{name.strip()}%"))
-            )
-            .first()
+    # Tier 1 — SQL LIKE
+    row = (
+        Motors.query
+        .filter(
+            (func.lower(Motors.english_name).like(f"%{q}%"))
+            | (Motors.arabic_name.like(f"%{name.strip()}%"))
         )
-        if row:
-            return _motor_to_dict(row)
+        .first()
+    )
+    if row:
+        return _motor_to_dict(row)
 
-        # Tiers 2-4 load all rows once
-        all_rows = session.query(Motors).all()
+    # Tiers 2-4 load all rows once
+    all_rows = Motors.query.all()
 
-        words = q.split()
-        if words:
-            def _all_tokens(m):
-                return (
-                    set(re.split(r'\W+', str(m.english_name).lower()))
-                    | set(re.split(r'\W+', str(m.arabic_name)))
-                    | set(re.split(r'\W+', str(m.company).lower()))
-                )
+    words = q.split()
+    if words:
+        def _all_tokens(m):
+            return (
+                set(re.split(r'\W+', str(m.english_name).lower()))
+                | set(re.split(r'\W+', str(m.arabic_name)))
+                | set(re.split(r'\W+', str(m.company).lower()))
+            )
 
-            # Tier 2 — ALL words match (precise)
-            for m in all_rows:
-                if all(w in _all_tokens(m) for w in words):
-                    return _motor_to_dict(m)
+        # Tier 2 — ALL words match (precise)
+        for m in all_rows:
+            if all(w in _all_tokens(m) for w in words):
+                return _motor_to_dict(m)
 
-            # Tier 3 — MAJORITY match (>=2/3)
-            threshold = max(1, math.ceil(len(words) * 2 / 3))
-            for m in all_rows:
-                toks = _all_tokens(m)
-                if sum(1 for w in words if w in toks) >= threshold:
-                    return _motor_to_dict(m)
+        # Tier 3 — MAJORITY match (>=2/3)
+        threshold = max(1, math.ceil(len(words) * 2 / 3))
+        for m in all_rows:
+            toks = _all_tokens(m)
+            if sum(1 for w in words if w in toks) >= threshold:
+                return _motor_to_dict(m)
 
-        # Tier 4 — normalized substring
-        q_norm = _normalize(q)
-        if q_norm:
-            for m in all_rows:
-                if q_norm in _normalize(str(m.english_name)):
-                    return _motor_to_dict(m)
+    # Tier 4 — normalized substring
+    q_norm = _normalize(q)
+    if q_norm:
+        for m in all_rows:
+            if q_norm in _normalize(str(m.english_name)):
+                return _motor_to_dict(m)
 
-        return None
-    finally:
-        Session.remove()
+    return None
 
 
 def get_catalog_summary() -> dict:
-    session = Session()
-    try:
-        rows = session.query(Motors).filter(Motors.is_available == True).all()
+    rows = Motors.query.filter(Motors.is_available == True).all()
 
-        types = {}
-        companies = {}
-        prices = []
-        for r in rows:
-            types[r.moto_type] = types.get(r.moto_type, 0) + 1
-            companies[r.company] = companies.get(r.company, 0) + 1
-            if r.price is not None:
-                prices.append(r.price)
+    types = {}
+    companies = {}
+    prices = []
+    for r in rows:
+        types[r.moto_type] = types.get(r.moto_type, 0) + 1
+        companies[r.company] = companies.get(r.company, 0) + 1
+        if r.price is not None:
+            prices.append(r.price)
 
-        return {
-            "total":     len(rows),
-            "types":     types,
-            "companies": companies,
-            "price_min": min(prices) if prices else 0,
-            "price_max": max(prices) if prices else 0,
-        }
-    finally:
-        Session.remove()
+    return {
+        "total":     len(rows),
+        "types":     types,
+        "companies": companies,
+        "price_min": min(prices) if prices else 0,
+        "price_max": max(prices) if prices else 0,
+    }
 
 
 def get_price_spread(filters: dict = None, count: int = 5) -> List[dict]:
     """Return `count` vehicles evenly spread across the price range."""
-    session = Session()
-    try:
-        query = session.query(Motors).filter(Motors.is_available == True, Motors.price.isnot(None))
+    query = Motors.query.filter(Motors.is_available == True, Motors.price.isnot(None))
 
-        if filters:
-            if filters.get("type"):
-                query = query.filter(Motors.moto_type.ilike(f"%{filters['type']}%"))
-            if filters.get("company"):
-                query = query.filter(Motors.company.ilike(f"%{filters['company']}%"))
-            if filters.get("max_price") is not None:
-                query = query.filter(Motors.price <= float(filters["max_price"]))
-            if filters.get("min_price") is not None:
-                query = query.filter(Motors.price >= float(filters["min_price"]))
+    if filters:
+        if filters.get("type"):
+            query = query.filter(Motors.moto_type.ilike(f"%{filters['type']}%"))
+        if filters.get("company"):
+            query = query.filter(Motors.company.ilike(f"%{filters['company']}%"))
+        if filters.get("max_price") is not None:
+            query = query.filter(Motors.price <= float(filters["max_price"]))
+        if filters.get("min_price") is not None:
+            query = query.filter(Motors.price >= float(filters["min_price"]))
 
-        rows = query.order_by(Motors.price).all()
+    rows = query.order_by(Motors.price).all()
 
-        if not rows:
-            return []
-        if len(rows) <= count:
-            return [_motor_to_dict(r) for r in rows]
+    if not rows:
+        return []
+    if len(rows) <= count:
+        return [_motor_to_dict(r) for r in rows]
 
-        step = (len(rows) - 1) / (count - 1)
-        indices = sorted({round(i * step) for i in range(count)})
-        return [_motor_to_dict(rows[i]) for i in indices]
-    finally:
-        Session.remove()
+    step = (len(rows) - 1) / (count - 1)
+    indices = sorted({round(i * step) for i in range(count)})
+    return [_motor_to_dict(rows[i]) for i in indices]
 
 
 def get_similar_vehicles(vehicle: dict, count: int = 3) -> List[dict]:
@@ -194,24 +177,20 @@ def get_similar_vehicles(vehicle: dict, count: int = 3) -> List[dict]:
     if not price or not vtype:
         return []
 
-    session = Session()
-    try:
-        rows = (
-            session.query(Motors)
-            .filter(
-                Motors.is_available == True,
-                Motors.price.isnot(None),
-                Motors.moto_type.ilike(f"%{vtype}%"),
-                Motors.price.between(price * 0.6, price * 1.4),
-                func.lower(Motors.english_name) != name_en.lower(),
-            )
-            .order_by(func.abs(Motors.price - price))
-            .limit(count)
-            .all()
+    rows = (
+        Motors.query
+        .filter(
+            Motors.is_available == True,
+            Motors.price.isnot(None),
+            Motors.moto_type.ilike(f"%{vtype}%"),
+            Motors.price.between(price * 0.6, price * 1.4),
+            func.lower(Motors.english_name) != name_en.lower(),
         )
-        return [_motor_to_dict(r) for r in rows]
-    finally:
-        Session.remove()
+        .order_by(func.abs(Motors.price - price))
+        .limit(count)
+        .all()
+    )
+    return [_motor_to_dict(r) for r in rows]
 
 
 # ---------------------------------------------------------------------------
