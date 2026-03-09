@@ -4,10 +4,11 @@ from graph.agent_graph import get_agent
 _chat_sessions = {}
 
 
-def _get_or_create_session(user_id: str) -> dict:
+def _get_or_create_session(user_id: str, client=None) -> dict:
     if user_id not in _chat_sessions:
         _chat_sessions[user_id] = {
             "user_id": user_id,
+            "client": client,
             "current_message": "",
             "conversation_history": [],
             "intent": None,
@@ -23,12 +24,15 @@ def _get_or_create_session(user_id: str) -> dict:
             "intent_usage": None,
             "usage": None,
         }
+    else:
+        # Always refresh the client object in case it changed
+        _chat_sessions[user_id]["client"] = client
     return _chat_sessions[user_id]
 
 
-def chat(user_id: str, message: str) -> dict:
+def chat(user_id: str, message: str, client=None) -> dict:
     """Run the agent and return the result."""
-    session = _get_or_create_session(user_id)
+    session = _get_or_create_session(user_id, client=client)
     session["current_message"] = message
 
     agent = get_agent()

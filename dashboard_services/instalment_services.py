@@ -4,6 +4,40 @@ from models.models import Instalments, db
 class InstalmentServices:
 
     # =========================
+    # Get Installment Rate (for agent)
+    # =========================
+    @staticmethod
+    def get_installment_rate(months: int, down_payment_pct: float = 0) -> dict:
+        plan = (
+            Instalments.query
+            .filter(
+                Instalments.min_down_payment <= down_payment_pct,
+                Instalments.max_down_payment > down_payment_pct,
+                Instalments.min_months < months,
+                Instalments.max_months >= months,
+            )
+            .order_by(Instalments.max_months.asc())
+            .first()
+        )
+        if not plan:
+            plan = (
+                Instalments.query
+                .filter(
+                    Instalments.min_down_payment <= down_payment_pct,
+                    Instalments.max_down_payment > down_payment_pct,
+                )
+                .order_by(Instalments.max_months.desc())
+                .first()
+            )
+        if not plan:
+            return {}
+        return {
+            "percentage": plan.percentage,
+            "percentage_per_month": plan.percentage_per_month,
+            "max_months": plan.max_months,
+        }
+
+    # =========================
     # Get All
     # =========================
     @staticmethod

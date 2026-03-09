@@ -1,7 +1,7 @@
 import json
 from typing import Optional
 from langchain_core.tools import tool
-from services.data_service import get_vehicles, get_vehicle_by_name, get_catalog_summary, calculate_custom_installment
+from dashboard_services.vehicle_query_services import get_vehicles, get_vehicle_by_name, get_catalog_summary, calculate_custom_installment
 
 MOTO_TYPE = "موتوسيكل"
 
@@ -74,8 +74,8 @@ def motorcycle_installments(vehicle_name: str) -> str:
 @tool
 def motorcycle_by_monthly_budget(max_monthly: float, months: int = 12, limit: int = 3) -> str:
     """Find motorcycles that fit a monthly installment budget. Returns JSON."""
-    from services.db_service import get_installment_rate
-    rate_data = get_installment_rate(months, 0)
+    from dashboard_services.instalment_services import InstalmentServices
+    rate_data = InstalmentServices.get_installment_rate(months, 0)
     if not rate_data:
         return json.dumps({"error": "لا تتوفر بيانات تقسيط لهذه المدة"}, ensure_ascii=False)
 

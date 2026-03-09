@@ -5,8 +5,8 @@ from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
 from graph.state import AgentState
 from llm.gemini import get_gemini
-from services.data_service import _fmt_price, _safe, _has_value
-from services.db_service import update_client_turn
+from dashboard_services.vehicle_query_services import _fmt_price, _safe, _has_value
+from dashboard_services.client_services import ClientServices
 
 SHOWROOM_INFO = """Showroom info:
 - Name: ibyco — motorcycles & accessories showroom
@@ -202,10 +202,9 @@ def response_node(state: AgentState) -> dict:
     ]
 
     # Persist turn summary to DB
-    user_id = state.get("user_id", "unknown")
     try:
-        update_client_turn(
-            phone_number=user_id,
+        ClientServices.update_client_turn(
+            client=state.get("client"),
             user_message=message,
             bot_response=response_text,
             intent=intent,

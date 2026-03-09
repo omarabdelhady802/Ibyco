@@ -3,6 +3,7 @@ from typing import TypedDict, List, Dict, Optional, Any
 
 class AgentState(TypedDict):
     user_id: str
+    client: Optional[Any]                        # Client model object passed from the request
     current_message: str
     conversation_history: List[Dict[str, str]]  # [{"role": "user"|"assistant", "content": "..."}]
     intent: Optional[str]                        # browse | filter | details | installment | booking | greeting | other

@@ -389,13 +389,16 @@ def logout():
 
 # ── Agent Chat API ──────────────────────────────────────────────────
 
-from services.chat_service import chat as agent_chat, reset_session as agent_reset
+from dashboard_services.chat_service import chat as agent_chat, reset_session as agent_reset
+from dashboard_services.client_services import ClientServices
 
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
     data = request.get_json()
-    result = agent_chat(data.get("user_id", "unknown"), data.get("message", ""))
+    user_id = data.get("user_id", "unknown")
+    client = ClientServices.get_client_by_phone(user_id)
+    result = agent_chat(user_id, data.get("message", ""), client=client)
     return jsonify(result)
 
 

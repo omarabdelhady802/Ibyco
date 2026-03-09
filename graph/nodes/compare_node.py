@@ -4,7 +4,7 @@ No LLM — deterministic lookup; Gemini in response_node does the comparison tex
 """
 import math
 from graph.state import AgentState
-from services.data_service import get_vehicle_by_name
+from dashboard_services.vehicle_query_services import get_vehicle_by_name
 
 
 def _clean(v: dict) -> dict:

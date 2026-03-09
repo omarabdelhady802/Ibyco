@@ -199,7 +199,8 @@ def get_similar_vehicles(vehicle: dict, count: int = 3) -> List[dict]:
 
 def calculate_custom_installment(vehicle: dict, months: int, down_payment: float = 0) -> dict:
     """Calculate monthly installment using the range-based instalments table."""
-    from services.db_service import get_installment_rate
+    from dashboard_services.instalment_services import InstalmentServices
+    get_installment_rate = InstalmentServices.get_installment_rate
 
     price = vehicle.get("price")
     name_en = vehicle.get("name_en") or ""

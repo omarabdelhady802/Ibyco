@@ -4,7 +4,7 @@ No LLM — deterministic data fetching based on intent + filters.
 """
 import json
 from graph.state import AgentState
-from services.data_service import get_price_spread, get_vehicle_by_name, calculate_custom_installment, get_similar_vehicles
+from dashboard_services.vehicle_query_services import get_price_spread, get_vehicle_by_name, calculate_custom_installment, get_similar_vehicles
 from tools.scooter_tools import (
     search_scooters,
     scooter_by_monthly_budget,
