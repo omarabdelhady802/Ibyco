@@ -135,9 +135,34 @@ def response_node(state: AgentState) -> dict:
         traceback.print_exc()
         context = ""
 
+    client = state.get("client")
+    old_summary = client.chat_summary if client else ""
+    filters = state.get("filters", {})
+    lead = state.get("lead", {})
+
     sys_content = BOOKING_PROMPT if intent == "booking" else SYSTEM_PROMPT
     if context:
         sys_content += f"\n\nAvailable data:\n{context}"
+
+    sys_content += f"""
+
+---
+CRM TASK: After writing your reply, append a section that updates the client summary.
+
+EXISTING SUMMARY:
+{old_summary or '(new client)'}
+
+INTENT: {intent or 'unknown'}
+FILTERS: {filters}
+LEAD: {lead}
+
+Format your full output EXACTLY like this:
+<REPLY>
+your reply to the customer here
+</REPLY>
+<SUMMARY>
+updated merged summary here (max 500 chars, bullet points, English)
+</SUMMARY>"""
 
     messages = [SystemMessage(content=sys_content)]
 
@@ -154,9 +179,19 @@ def response_node(state: AgentState) -> dict:
     _OUTPUT_COST_PER_M = 0.40   # $ per 1M output tokens
 
     usage = {}
+    new_summary = old_summary
     try:
         result = llm.invoke(messages)
-        response_text = result.content.strip()
+        raw = result.content.strip()
+
+        # Parse <REPLY> and <SUMMARY> blocks
+        import re
+        reply_match   = re.search(r"<REPLY>(.*?)</REPLY>", raw, re.DOTALL)
+        summary_match = re.search(r"<SUMMARY>(.*?)</SUMMARY>", raw, re.DOTALL)
+        response_text = reply_match.group(1).strip() if reply_match else raw
+        if summary_match:
+            new_summary = summary_match.group(1).strip()[:2000]
+
         meta = getattr(result, "usage_metadata", None) or getattr(result, "response_metadata", {}).get("token_usage", {})
         if meta:
             usage = {
@@ -201,15 +236,13 @@ def response_node(state: AgentState) -> dict:
         {"role": "assistant", "content": response_text},
     ]
 
-    # Persist turn summary to DB
+    # Persist turn to DB — summary already generated above, no extra LLM call
     try:
         ClientServices.update_client_turn(
             client=state.get("client"),
             user_message=message,
             bot_response=response_text,
-            intent=intent,
-            filters=state.get("filters", {}),
-            lead=state.get("lead", {}),
+            new_summary=new_summary,
         )
     except Exception:
         pass  # never crash the response over a DB write
