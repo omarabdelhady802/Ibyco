@@ -35,11 +35,8 @@ class BookingServices:
     # =========================
     @staticmethod
     def create_booking(client, purpose=None):
-        if not client:
-            return None
-
         booking = Booking(
-            client_id=client.id,
+            client_id=client.id if client else None,
             purpose=purpose,
             status="pending",
             created_at=datetime.now(timezone.utc),

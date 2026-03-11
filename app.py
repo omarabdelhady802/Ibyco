@@ -487,13 +487,15 @@ def logout():
 # ── Agent Chat API ──────────────────────────────────────────────────
 
 from graph.agent_graph import get_agent
+from graph.agent_response import AgentResponse
 from dashboard_services.client_services import ClientServices
 
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
     data = request.get_json()
-    client_id = data.get("client_id")
+    client_data = data.get("client")
+    client_id = client_data.get("id") if client_data else None
     client = ClientServices.get_client_by_id(client_id) if client_id else None
 
     state = {
@@ -517,13 +519,7 @@ def api_chat():
 
     result = get_agent().invoke(state)
 
-    return jsonify({
-        "response":             result.get("response", ""),
-        "intent":               result.get("intent"),
-        "vehicles":             result.get("vehicles", []),
-        "usage":                result.get("usage") or {},
-        "conversation_history": result.get("conversation_history", []),
-    })
+    return jsonify(AgentResponse.from_result(result).to_dict())
 
 
 if __name__ == '__main__':

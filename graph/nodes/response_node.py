@@ -8,37 +8,38 @@ from llm.gemini import get_gemini
 from dashboard_services.vehicle_query_services import _fmt_price, _safe, _has_value
 from dashboard_services.client_services import ClientServices
 
-SHOWROOM_INFO = """Showroom info:
-- Name: ibyco — motorcycles & accessories showroom
-- Address: 12 Street 302, off Bahaa El-Din El-Ghatoury, Smouha, Alexandria
-- Working hours: every day 2 PM to 11 PM — Friday is closed
-- WhatsApp / page messages: 01505989502 — 01505989506"""
+_SHOWROOM = (
+    "ibyco  motorcycles & accessories showroom | Alexandria, 12 St 302 off Bahaa El-Din El-Ghatoury, Smouha | "
+    "Daily 2PM-11PM (Friday closed) | WhatsApp: 01505989502 / 01505989506"
+)
 
-SYSTEM_PROMPT = """You are a professional sales assistant at "ibyco" motorcycles & accessories showroom.
-Always reply in the SAME LANGUAGE the customer uses. If they write in Egyptian Arabic, reply in professional Egyptian Arabic. If English, reply in English.
-Your tone should be professional yet friendly and natural — like a skilled salesperson talking to an important customer.
-When presenting products, organise the information clearly and neatly.
-NEVER mention information that is not in the data provided to you. Do NOT make up or hallucinate products.
-If nothing matches the customer's request, let them know politely.
+SYSTEM_PROMPT = (
+    f'You are a sales assistant at "ibyco" motorcycles & accessories showroom.\n'
+    f"Reply in the SAME LANGUAGE the customer uses (Egyptian Arabic or English).\n"
+    f"Be professional, friendly, and concise. Present data clearly.\n"
+    f"NEVER hallucinate products — only use data provided.\n"
+    f"End every reply with a short invitation to visit or contact us.\n"
+    f"Oils/accessories are not in the catalog — direct to showroom.\n"
+    f"{_SHOWROOM}"
+)
 
-Always encourage the customer to visit the showroom or contact us — end every reply with a polite invitation to visit or get in touch.
+BOOKING_PROMPT = (
+    f'You are a sales assistant at "ibyco" showroom.\n'
+    f"Reply in the SAME LANGUAGE the customer uses.\n"
+    f"The customer wants to book a visit. If name/phone not provided yet, ask politely.\n"
+    f"{_SHOWROOM}"
+)
 
-""" + SHOWROOM_INFO + """
-
-Important notes:
-- Installment plans are available from 1 to 24 months. If you receive calculated installment data, present it directly without hesitation or apology.
-- Oils and accessories are NOT in the electronic catalog — direct the customer to visit the showroom or call for enquiries.
-- If someone asks about a scooter suitable for kids, use engine size and top speed (50cc/40km/h for children, 150cc+ for youth).
-- If asked about "latest model", show the latest products and confirm the showroom updates its catalog regularly.
-- Keep your replies concise and useful."""
-
-BOOKING_PROMPT = """You are a professional sales assistant at "ibyco" showroom. The customer wants to book an appointment or visit.
-Always reply in the SAME LANGUAGE the customer uses.
-Your tone should be professional yet friendly and natural.
-If they haven't provided their name and phone number yet, ask politely so we can coordinate the appointment.
-If they have provided them, reassure them that the showroom team will contact them shortly to confirm the appointment or complete the deal.
-
-""" + SHOWROOM_INFO
+BOOKING_CONFIRMED_AR = (
+    "تم استلام طلب حجزك بنجاح!\n"
+    "سيتواصل معك فريق ibyco قريباً لتأكيد الموعد.\n\n"
+    "يسعدنا خدمتك — للتواصل الفوري: 01505989502"
+)
+BOOKING_CONFIRMED_EN = (
+    "Your booking request has been received!\n"
+    "The ibyco team will contact you shortly to confirm.\n\n"
+    "You can also reach us directly: 01505989502"
+)
 
 
 def _format_vehicle(v: dict) -> str:
@@ -122,7 +123,37 @@ def _build_context(state: AgentState) -> str:
     return "\n".join(parts)
 
 
+def _static_response(state: AgentState, text: str) -> dict:
+    """Return a static reply without calling the LLM."""
+    message = state["current_message"]
+    history = state.get("conversation_history", [])
+    updated_history = list(history) + [
+        {"role": "user",      "content": message},
+        {"role": "assistant", "content": text},
+    ]
+    try:
+        ClientServices.update_client_turn(
+            client=state.get("client"),
+            user_message=message,
+            bot_response=text,
+        )
+    except Exception:
+        pass
+    return {
+        "response":             text,
+        "conversation_history": updated_history,
+        "usage":                state.get("intent_usage") or {},
+    }
+
+
 def response_node(state: AgentState) -> dict:
+    # Booking confirmed — skip LLM, return static confirmation
+    if state.get("booking_saved"):
+        message = state.get("current_message", "")
+        is_arabic = any("\u0600" <= c <= "\u06ff" for c in message)
+        text = BOOKING_CONFIRMED_AR if is_arabic else BOOKING_CONFIRMED_EN
+        return _static_response(state, text)
+
     llm = get_gemini()
     message = state["current_message"]
     history = state.get("conversation_history", [])

@@ -27,11 +27,8 @@ class ComplaintServices:
     # =========================
     @staticmethod
     def create_complaint(client, message_text):
-        if not client:
-            return None
-
         complaint = Complaint(
-            client_id=client.id,
+            client_id=client.id if client else None,
             message_text=message_text,
             created_at=datetime.now(timezone.utc),
         )
