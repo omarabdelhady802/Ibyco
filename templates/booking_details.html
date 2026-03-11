@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}تفاصيل الحجز{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-4">تفاصيل الحجز</h1>
+
+<form method="post">
+
+<div class="mt-3">
+
+<label>رقم الهاتف</label>
+
+<input
+class="form-control"
+value="{{ client.phone_number }}"
+readonly
+>
+
+</div>
+
+
+<div class="mt-3">
+
+<label>الغرض</label>
+
+<input
+class="form-control"
+value="{{ booking.purpose }}"
+readonly
+>
+
+</div>
+
+
+<div class="mt-3">
+
+<label>ملاحظات العميل</label>
+
+<textarea
+name="info"
+class="form-control"
+rows="4"
+>
+
+{{ client.info }}
+
+</textarea>
+
+</div>
+
+
+<div class="mt-3">
+
+<label>
+
+<input
+type="checkbox"
+name="has_purchase"
+{% if client.has_purchased %}checked{% endif %}
+>
+
+تم الشراء
+
+</label>
+
+</div>
+
+
+<div class="mt-3">
+
+<label>حالة الحجز</label>
+
+<select name="status" class="form-control">
+
+<option value="pending"
+{% if booking.status == "pending" %}selected{% endif %}
+>
+قيد الانتظار
+</option>
+
+<option value="completed"
+{% if booking.status == "completed" %}selected{% endif %}
+>
+مكتمل
+</option>
+
+<option value="canceled"
+{% if booking.status == "canceled" %}selected{% endif %}
+>
+ملغي
+</option>
+
+</select>
+
+</div>
+
+
+<button class="btn btn-success mt-4">
+
+حفظ
+
+</button>
+
+</form>
+
+{% endblock %}

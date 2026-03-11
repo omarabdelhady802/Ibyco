@@ -1,6 +1,7 @@
 # Flask dashboard
 flask
-flask-sqlalchemy
+flask-sqlalchem
+Flask-Migratey
 flask-login
 
 # LangGraph / LangChain

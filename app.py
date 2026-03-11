@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta , time ,date
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -8,6 +9,13 @@ from dashboard_services.followup_template_services import FollowUpTemplateServic
 from dashboard_services.helmet_services import HelmetServices
 from dashboard_services.instalment_services import InstalmentServices
 from dashboard_services.motor_services import MotorServices
+from dashboard_services.booking_services import (
+    get_bookings_by_phone,
+    get_booking_by_id,
+    update_booking_and_client
+)
+
+
 
 
 
@@ -22,6 +30,7 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False  # Disable auto-commit
 login_manager = LoginManager(app)
 db.init_app(app)
+migrate = Migrate(app, db)
 #######################################################
 
 
@@ -373,6 +382,98 @@ def edit_instalment(instalment_id):
 
 # end routes for instalments
 
+
+# start routes for complaints
+
+# this route for display complaints which are not solved
+@app.route("/complaints")
+@login_required
+def complaints():
+
+    complaints = Complaint.query.filter_by(is_resolved=False).all()
+
+    return render_template("complaints.html", complaints=complaints)
+
+
+
+# this route for display complaint in details
+@app.route("/complaints/view/<int:id>", methods=["GET", "POST"])
+@login_required
+def view_complaint(id):
+
+    complaint = Complaint.query.get_or_404(id)
+
+    if request.method == "POST":
+
+        is_resolved = request.form.get("is_resolved")
+
+        if is_resolved == "1":
+            complaint.is_resolved = True
+            complaint.resolved_at = datetime.utcnow()
+        else:
+            complaint.is_resolved = False
+            complaint.resolved_at = None
+
+        db.session.commit()
+
+        return redirect(url_for("complaints"))
+
+    return render_template("view_complaint.html", complaint=complaint)
+
+# end routes for complaints
+
+
+# start routes for booking
+
+# this route for display all booking
+@app.route("/bookings", methods=["GET", "POST"])
+@login_required
+def bookings():
+
+    phone = None
+
+    if request.method == "POST":
+        phone = request.form.get("phone")
+
+    bookings = get_bookings_by_phone(phone)
+
+    return render_template(
+        "bookings.html",
+        bookings=bookings,
+        phone=phone
+    )
+
+
+# this route for view and update book and client info 
+@app.route("/booking/<int:booking_id>", methods=["GET", "POST"])
+@login_required
+def booking_details(booking_id):
+
+    booking = get_booking_by_id(booking_id)
+
+    if not booking:
+        flash("الحجز غير موجود", "danger")
+        return redirect(url_for("booking.bookings"))
+
+    if request.method == "POST":
+
+        booking, msg = update_booking_and_client(
+            booking_id,
+            request.form
+        )
+
+        if booking:
+            flash(msg, "success")
+        else:
+            flash(msg, "danger")
+
+        return redirect(url_for("bookings"))
+
+    return render_template(
+        "booking_details.html",
+        booking=booking,
+        client=booking.client
+    )
 
 
 

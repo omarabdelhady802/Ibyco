@@ -48,6 +48,7 @@ class Client(db.Model):
     # Relationships
     followups = db.relationship("FollowUp", backref="client", lazy=True)
     complaints = db.relationship("Complaint", backref="client", lazy=True)
+    Bookings = db.relationship("Booking", backref="client", lazy=True)
 
 
 # =========================
@@ -196,3 +197,24 @@ class Instalments(db.Model):
             )
         else:
             self.percentage_per_month = 0
+
+
+
+
+# =========================
+# Booking Table
+# =========================
+class Booking(db.Model):
+    __tablename__ = "bookings"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    client_id = db.Column(db.Integer, db.ForeignKey("clients.id"))
+
+    purpose = db.Column(db.Text)
+
+    date = db.Column(db.String(100))
+
+    status = db.Column(db.String(50), default="pending")
+ 
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)

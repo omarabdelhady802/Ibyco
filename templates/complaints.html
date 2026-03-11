@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}الشكاوى{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-4">الشكاوى</h1>
+
+<table class="table mt-4">
+
+<thead>
+<tr>
+<th>ID</th>
+<th>رقم الهاتف</th>
+<th>الرسالة</th>
+<th>تاريخ الشكوى</th>
+<th>مراجعة</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for complaint in complaints %}
+<tr>
+
+<td>{{ complaint.id }}</td>
+
+<td>{{ complaint.client.phone_number }}</td>
+
+<td>{{ complaint.message_text[:50] }}...</td>
+
+<td>{{ complaint.created_at }}</td>
+
+<td>
+<a href="{{ url_for('view_complaint', id=complaint.id) }}">
+مراجعة
+</a>
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+
+{% endblock %}
