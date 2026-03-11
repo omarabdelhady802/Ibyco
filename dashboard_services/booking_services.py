@@ -1,48 +1,93 @@
-from models.models import Client,db,Booking
-from datetime import datetime
+from datetime import datetime, timezone
+from models.models import Booking, Client, db
 
 
-def get_bookings_by_phone(phone=None):
+class BookingServices:
 
-    query = Booking.query.join(Client)
+    # =========================
+    # Get All Bookings
+    # =========================
+    @staticmethod
+    def get_bookings():
+        return Booking.query.order_by(Booking.created_at.desc()).all()
 
-    if phone:
-        query = query.filter(Client.phone_number.ilike(f"%{phone}%"))
-    else:
-        query = query.filter(
-            Booking.status.notin_(["completed", "canceled"])
+    # =========================
+    # Get Bookings By Phone
+    # =========================
+    @staticmethod
+    def get_bookings_by_phone(phone=None):
+        if not phone:
+            return Booking.query.order_by(Booking.created_at.desc()).all()
+        client = Client.query.filter_by(phone_number=phone).first()
+        if not client:
+            return []
+        return Booking.query.filter_by(client_id=client.id).order_by(Booking.created_at.desc()).all()
+
+    # =========================
+    # Get Booking By ID
+    # =========================
+    @staticmethod
+    def get_booking_by_id(booking_id):
+        return Booking.query.get(booking_id)
+
+    # =========================
+    # Create Booking (for agent)
+    # =========================
+    @staticmethod
+    def create_booking(client, purpose=None):
+        if not client:
+            return None
+
+        booking = Booking(
+            client_id=client.id,
+            purpose=purpose,
+            status="pending",
+            created_at=datetime.now(timezone.utc),
         )
+        db.session.add(booking)
+        db.session.commit()
 
-    return query.all()
+        return booking.id
 
-def get_booking_by_id(booking_id):
-    return Booking.query.get(booking_id)
+    # =========================
+    # Update Booking Status
+    # =========================
+    @staticmethod
+    def update_status(booking_id, status):
+        booking = Booking.query.get(booking_id)
 
+        if not booking:
+            return None, "الحجز غير موجود"
 
-def update_booking_and_client(booking_id, form):
+        booking.status = status
+        db.session.commit()
 
-    booking = Booking.query.get(booking_id)
+        return booking, "تم تحديث الحجز بنجاح"
 
-    if not booking:
-        return None, "الحجز غير موجود"
+    # =========================
+    # Update Booking + Client (dashboard)
+    # =========================
+    @staticmethod
+    def update_booking_and_client(booking_id, form):
+        booking = Booking.query.get(booking_id)
 
-    client = booking.client
+        if not booking:
+            return None, "الحجز غير موجود"
 
-    # -------- booking update --------
-    booking.status = form.get("status")
+        booking.status  = form.get("status", booking.status)
+        booking.purpose = form.get("purpose", booking.purpose)
+        booking.date    = form.get("date", booking.date)
 
-    # -------- client update --------
-    client.info = form.get("info")
+        client = booking.client
+        if client:
+            if form.get("info"):
+                client.info = form.get("info")
+            if form.get("has_purchased") is not None:
+                from datetime import datetime, timezone
+                client.has_purchased = form.get("has_purchased") == "true"
+                if client.has_purchased:
+                    client.purchase_date = datetime.now(timezone.utc)
 
-    has_purchase = form.get("has_purchase")
+        db.session.commit()
 
-    if has_purchase:
-        client.has_purchased = True
-
-        # auto purchase date
-        if not client.purchase_date:
-            client.purchase_date = datetime.utcnow()
-
-    db.session.commit()
-
-    return booking, "تم تحديث البيانات بنجاح"
+        return booking, "تم تحديث الحجز بنجاح"

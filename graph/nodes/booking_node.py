@@ -1,21 +1,18 @@
 """
-Booking Node: saves the appointment/booking request to the DB.
+Booking Node: saves the appointment/booking request to the Booking table.
 """
 from graph.state import AgentState
-from dashboard_services.client_services import ClientServices
+from dashboard_services.booking_services import BookingServices
 
 
 def booking_node(state: AgentState) -> dict:
-    user_id = state.get("user_id", "unknown")
-    lead    = state.get("lead", {})
+    client  = state.get("client")
     filters = state.get("filters", {})
 
-    name             = lead.get("name")
-    phone            = lead.get("phone") or user_id
-    vehicle_interest = filters.get("vehicle_name") or filters.get("company")
+    purpose = filters.get("vehicle_name") or filters.get("company")
 
     try:
-        ClientServices.save_booking(phone_number=phone, name=name, vehicle_interest=vehicle_interest)
+        BookingServices.create_booking(client=client, purpose=purpose)
         booking_saved = True
     except Exception:
         booking_saved = False

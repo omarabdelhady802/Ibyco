@@ -1,5 +1,5 @@
-from datetime import datetime
-from models.models import Complaint, Client, db
+from datetime import datetime, timezone
+from models.models import Complaint, db
 
 
 class ComplaintServices:
@@ -26,19 +26,14 @@ class ComplaintServices:
     # Create Complaint (for agent use)
     # =========================
     @staticmethod
-    def create_complaint(phone_number, message_text):
-
-        client = Client.query.filter_by(phone_number=phone_number).first()
-
+    def create_complaint(client, message_text):
         if not client:
-            client = Client(phone_number=phone_number, created_at=datetime.utcnow())
-            db.session.add(client)
-            db.session.flush()
+            return None
 
         complaint = Complaint(
             client_id=client.id,
             message_text=message_text,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         db.session.add(complaint)
         db.session.commit()
@@ -57,7 +52,7 @@ class ComplaintServices:
             return None, "الشكوى غير موجودة"
 
         complaint.is_resolved = True
-        complaint.resolved_at = datetime.utcnow()
+        complaint.resolved_at = datetime.now(timezone.utc)
 
         db.session.commit()
 

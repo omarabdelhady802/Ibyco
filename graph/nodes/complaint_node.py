@@ -7,11 +7,11 @@ from dashboard_services.complaint_services import ComplaintServices
 
 
 def complaint_node(state: AgentState) -> dict:
-    user_id = state.get("user_id", "unknown")
+    client  = state.get("client")
     message = state.get("current_message", "")
 
     try:
-        ComplaintServices.create_complaint(phone_number=user_id, message_text=message)
+        ComplaintServices.create_complaint(client=client, message_text=message)
         complaint_saved = True
     except Exception:
         complaint_saved = False

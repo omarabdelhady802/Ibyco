@@ -1,5 +1,5 @@
 from flask_login import UserMixin
-from datetime import datetime, timedelta , time
+from datetime import datetime, timedelta, time, timezone
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -43,7 +43,7 @@ class Client(db.Model):
 
     is_active = db.Column(db.Boolean, default=True) # this col help with users dont need to send any message
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow) # this col will help us on analysis
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc)) # this col will help us on analysis
 
     # Relationships
     followups = db.relationship("FollowUp", backref="client", lazy=True)
@@ -81,7 +81,7 @@ class FollowUp(db.Model):
 
     created_by_employee = db.Column(db.String(100)) # the name of emploee who creates the followup
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # =========================
@@ -100,7 +100,7 @@ class Complaint(db.Model):
 
     resolved_at = db.Column(db.DateTime)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 
 # =========================
@@ -217,4 +217,4 @@ class Booking(db.Model):
 
     status = db.Column(db.String(50), default="pending")
  
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))

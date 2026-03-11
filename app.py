@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timedelta , time ,date
+from datetime import datetime, timedelta, time, date, timezone
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from models.models import *
 from dashboard_services import UserServices
@@ -9,11 +9,7 @@ from dashboard_services.followup_template_services import FollowUpTemplateServic
 from dashboard_services.helmet_services import HelmetServices
 from dashboard_services.instalment_services import InstalmentServices
 from dashboard_services.motor_services import MotorServices
-from dashboard_services.booking_services import (
-    get_bookings_by_phone,
-    get_booking_by_id,
-    update_booking_and_client
-)
+from dashboard_services.booking_services import BookingServices
 
 
 
@@ -409,7 +405,7 @@ def view_complaint(id):
 
         if is_resolved == "1":
             complaint.is_resolved = True
-            complaint.resolved_at = datetime.utcnow()
+            complaint.resolved_at = datetime.now(timezone.utc)
         else:
             complaint.is_resolved = False
             complaint.resolved_at = None
@@ -435,7 +431,7 @@ def bookings():
     if request.method == "POST":
         phone = request.form.get("phone")
 
-    bookings = get_bookings_by_phone(phone)
+    bookings = BookingServices.get_bookings_by_phone(phone)
 
     return render_template(
         "bookings.html",
@@ -449,7 +445,7 @@ def bookings():
 @login_required
 def booking_details(booking_id):
 
-    booking = get_booking_by_id(booking_id)
+    booking = BookingServices.get_booking_by_id(booking_id)
 
     if not booking:
         flash("الحجز غير موجود", "danger")
@@ -457,7 +453,7 @@ def booking_details(booking_id):
 
     if request.method == "POST":
 
-        booking, msg = update_booking_and_client(
+        booking, msg = BookingServices.update_booking_and_client(
             booking_id,
             request.form
         )
@@ -490,23 +486,44 @@ def logout():
 
 # ── Agent Chat API ──────────────────────────────────────────────────
 
-from dashboard_services.chat_service import chat as agent_chat, reset_session as agent_reset
+from graph.agent_graph import get_agent
 from dashboard_services.client_services import ClientServices
 
 
 @app.route('/api/chat', methods=['POST'])
 def api_chat():
     data = request.get_json()
-    user_id = data.get("user_id", "unknown")
-    client = ClientServices.get_client_by_phone(user_id)
-    result = agent_chat(user_id, data.get("message", ""), client=client)
-    return jsonify(result)
+    client_id = data.get("client_id")
+    client = ClientServices.get_client_by_id(client_id) if client_id else None
 
+    state = {
+        "user_id":              data.get("user_id", "unknown"),
+        "client":               client,
+        "current_message":      data.get("message", ""),
+        "conversation_history": data.get("conversation_history", []),
+        "intent":               None,
+        "filters":              {},
+        "vehicles":             [],
+        "lead":                 {},
+        "booking_stage":        None,
+        "response":             None,
+        "recommendations":      [],
+        "complaint_saved":      None,
+        "booking_saved":        None,
+        "ask_clarification":    None,
+        "intent_usage":         None,
+        "usage":                None,
+    }
 
-@app.route('/api/chat/<user_id>', methods=['DELETE'])
-def api_reset_session(user_id):
-    agent_reset(user_id)
-    return jsonify({"status": "ok", "message": f"Session for {user_id} cleared."})
+    result = get_agent().invoke(state)
+
+    return jsonify({
+        "response":             result.get("response", ""),
+        "intent":               result.get("intent"),
+        "vehicles":             result.get("vehicles", []),
+        "usage":                result.get("usage") or {},
+        "conversation_history": result.get("conversation_history", []),
+    })
 
 
 if __name__ == '__main__':
