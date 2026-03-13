@@ -34,10 +34,11 @@ class BookingServices:
     # Create Booking (for agent)
     # =========================
     @staticmethod
-    def create_booking(client, purpose=None):
+    def create_booking(client, purpose=None, date=None):
         booking = Booking(
             client_id=client.id if client else None,
             purpose=purpose,
+            date=date,
             status="pending",
             created_at=datetime.now(timezone.utc),
         )

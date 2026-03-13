@@ -499,14 +499,12 @@ def api_chat():
     client = ClientServices.get_client_by_id(client_id) if client_id else None
 
     state = {
-        "user_id":              data.get("user_id", "unknown"),
         "client":               client,
         "current_message":      data.get("message", ""),
-        "conversation_history": data.get("conversation_history", []),
         "intent":               None,
         "filters":              {},
         "vehicles":             [],
-        "lead":                 {},
+        "lead":                 data.get("lead") or {},
         "booking_stage":        None,
         "response":             None,
         "recommendations":      [],

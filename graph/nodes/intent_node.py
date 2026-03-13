@@ -29,7 +29,9 @@ Return JSON only (no extra text) in this format:
   },
   "lead_info": {
     "name": "<customer name or null>",
-    "phone": "<phone number or null>"
+    "phone": "<phone number or null>",
+    "booking_purpose": "<reason for booking: test ride, purchase, inquiry, service — or null>",
+    "appointment_date": "<requested date or time mentioned by customer e.g. 'tomorrow', 'Saturday', '15 March' — or null>"
   }
 }
 
@@ -62,8 +64,20 @@ def intent_node(state: AgentState) -> dict:
     llm = get_gemini()
     message = state["current_message"]
 
+    client = state.get("client")
+    chat_summary  = (client.chat_summary   or "") if client else ""
+    last_bot_reply = (client.last_bot_reply or "") if client else ""
+
+    client_ctx = ""
+    if chat_summary:
+        client_ctx += f"\nClient history summary:\n{chat_summary}"
+    if last_bot_reply:
+        client_ctx += f"\nLast bot reply to this client:\n{last_bot_reply}"
+
+    system = SYSTEM_PROMPT + client_ctx if client_ctx else SYSTEM_PROMPT
+
     messages = [
-        SystemMessage(content=SYSTEM_PROMPT),
+        SystemMessage(content=system),
         HumanMessage(content=message),
     ]
 
@@ -98,6 +112,10 @@ def intent_node(state: AgentState) -> dict:
         existing_lead["name"] = lead_info["name"]
     if lead_info.get("phone"):
         existing_lead["phone"] = lead_info["phone"]
+    if lead_info.get("booking_purpose"):
+        existing_lead["booking_purpose"] = lead_info["booking_purpose"]
+    if lead_info.get("appointment_date"):
+        existing_lead["appointment_date"] = lead_info["appointment_date"]
 
     return {
         "intent": intent,

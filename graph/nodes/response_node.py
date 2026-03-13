@@ -1,7 +1,7 @@
 """
 Response Node: Gemini Flash (via OpenRouter) generates the final Arabic response.
 """
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from graph.state import AgentState
 from llm.gemini import get_gemini
@@ -15,7 +15,8 @@ _SHOWROOM = (
 
 SYSTEM_PROMPT = (
     f'You are a sales assistant at "ibyco" motorcycles & accessories showroom.\n'
-    f"Reply in the SAME LANGUAGE the customer uses (Egyptian Arabic or English).\n"
+    f"Reply ONLY in Egyptian Arabic or English — NEVER mix in any other language.\n"
+    f"Detect the language from the customer's message and reply entirely in that language.\n"
     f"Be professional, friendly, and concise. Present data clearly.\n"
     f"NEVER hallucinate products — only use data provided.\n"
     f"End every reply with a short invitation to visit or contact us.\n"
@@ -25,7 +26,8 @@ SYSTEM_PROMPT = (
 
 BOOKING_PROMPT = (
     f'You are a sales assistant at "ibyco" showroom.\n'
-    f"Reply in the SAME LANGUAGE the customer uses.\n"
+    f"Reply ONLY in Egyptian Arabic or English — NEVER mix in any other language.\n"
+    f"Detect the language from the customer's message and reply entirely in that language.\n"
     f"The customer wants to book a visit. If name/phone not provided yet, ask politely.\n"
     f"{_SHOWROOM}"
 )
@@ -113,12 +115,15 @@ def _build_context(state: AgentState) -> str:
             parts.append("The customer wants to file a complaint.")
 
     if intent == "booking":
-        name = lead.get("name")
-        phone = lead.get("phone")
-        if name and phone:
-            parts.append(f"Customer info: Name: {name}, Phone: {phone}")
+        name    = lead.get("name")
+        phone   = lead.get("phone")
+        date    = lead.get("appointment_date")
+        purpose = lead.get("booking_purpose")
+        if name and phone and date:
+            parts.append(f"Booking is confirmed and saved. Customer: {name}, Phone: {phone}, Date: {date}, Purpose: {purpose or 'visit'}.")
         else:
-            parts.append("The customer wants to book but hasn't provided their details yet.")
+            missing = [f for f, v in [("name", name), ("phone number", phone), ("preferred date or day", date)] if not v]
+            parts.append(f"The customer wants to book. Still missing: {', '.join(missing)}. Ask politely for the missing info.")
 
     return "\n".join(parts)
 
@@ -126,11 +131,6 @@ def _build_context(state: AgentState) -> str:
 def _static_response(state: AgentState, text: str) -> dict:
     """Return a static reply without calling the LLM."""
     message = state["current_message"]
-    history = state.get("conversation_history", [])
-    updated_history = list(history) + [
-        {"role": "user",      "content": message},
-        {"role": "assistant", "content": text},
-    ]
     try:
         ClientServices.update_client_turn(
             client=state.get("client"),
@@ -140,9 +140,8 @@ def _static_response(state: AgentState, text: str) -> dict:
     except Exception:
         pass
     return {
-        "response":             text,
-        "conversation_history": updated_history,
-        "usage":                state.get("intent_usage") or {},
+        "response": text,
+        "usage":    state.get("intent_usage") or {},
     }
 
 
@@ -156,7 +155,6 @@ def response_node(state: AgentState) -> dict:
 
     llm = get_gemini()
     message = state["current_message"]
-    history = state.get("conversation_history", [])
     intent = state.get("intent", "other")
 
     try:
@@ -167,11 +165,19 @@ def response_node(state: AgentState) -> dict:
         context = ""
 
     client = state.get("client")
-    old_summary = client.chat_summary if client else ""
+    old_summary    = (client.chat_summary   or "") if client else ""
+    last_bot_reply = (client.last_bot_reply or "") if client else ""
     filters = state.get("filters", {})
     lead = state.get("lead", {})
 
     sys_content = BOOKING_PROMPT if intent == "booking" else SYSTEM_PROMPT
+
+    # Give the LLM client context so it can personalise the reply
+    if old_summary:
+        sys_content += f"\n\nClient history summary:\n{old_summary}"
+    if last_bot_reply:
+        sys_content += f"\nYour last reply to this client:\n{last_bot_reply}"
+
     if context:
         sys_content += f"\n\nAvailable data:\n{context}"
 
@@ -195,15 +201,10 @@ your reply to the customer here
 updated merged summary here (max 500 chars, bullet points, English)
 </SUMMARY>"""
 
-    messages = [SystemMessage(content=sys_content)]
-
-    for turn in history[-6:]:
-        if turn["role"] == "user":
-            messages.append(HumanMessage(content=turn["content"]))
-        else:
-            messages.append(AIMessage(content=turn["content"]))
-
-    messages.append(HumanMessage(content=message))
+    messages = [
+        SystemMessage(content=sys_content),
+        HumanMessage(content=message),
+    ]
 
     # Gemini 2.0 Flash pricing via OpenRouter
     _INPUT_COST_PER_M  = 0.10   # $ per 1M input tokens
@@ -219,7 +220,11 @@ updated merged summary here (max 500 chars, bullet points, English)
         import re
         reply_match   = re.search(r"<REPLY>(.*?)</REPLY>", raw, re.DOTALL)
         summary_match = re.search(r"<SUMMARY>(.*?)</SUMMARY>", raw, re.DOTALL)
-        response_text = reply_match.group(1).strip() if reply_match else raw
+        if reply_match:
+            response_text = reply_match.group(1).strip()
+        else:
+            # LLM skipped opening tag — strip any leaked closing tags
+            response_text = re.sub(r"</?(REPLY|SUMMARY)>.*", "", raw, flags=re.DOTALL).strip()
         if summary_match:
             new_summary = summary_match.group(1).strip()[:2000]
 
@@ -262,11 +267,6 @@ updated merged summary here (max 500 chars, bullet points, English)
     usage["total_all_tokens"]       = total_all
     usage["cost_usd"]               = round(cost_usd, 6)
 
-    updated_history = list(history) + [
-        {"role": "user", "content": message},
-        {"role": "assistant", "content": response_text},
-    ]
-
     # Persist turn to DB — summary already generated above, no extra LLM call
     try:
         ClientServices.update_client_turn(
@@ -287,8 +287,7 @@ updated merged summary here (max 500 chars, bullet points, English)
             booking_stage = "collecting_info"
 
     return {
-        "response": response_text,
-        "conversation_history": updated_history,
+        "response":      response_text,
         "booking_stage": booking_stage,
-        "usage": usage,
+        "usage":         usage,
     }

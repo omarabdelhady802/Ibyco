@@ -23,33 +23,37 @@ class AgentResponse:
     response: str
     intent: Optional[str]
     vehicles: list
-    conversation_history: list
     booking_saved: Optional[Any]
     complaint_saved: Optional[Any]
     usage: dict
     client: Optional[dict]
+    lead: dict
 
     @staticmethod
     def from_result(result: dict) -> "AgentResponse":
+        # Clear lead after booking is saved so it doesn't persist stale data
+        lead = result.get("lead") or {}
+        if result.get("booking_saved"):
+            lead = {}
         return AgentResponse(
             response=result.get("response") or "",
             intent=result.get("intent"),
             vehicles=result.get("vehicles") or [],
-            conversation_history=result.get("conversation_history") or [],
             booking_saved=result.get("booking_saved"),
             complaint_saved=result.get("complaint_saved"),
             usage=result.get("usage") or {},
             client=_serialize_client(result.get("client")),
+            lead=lead,
         )
 
     def to_dict(self) -> dict:
         return {
-            "response":             self.response,
-            "intent":               self.intent,
-            "vehicles":             self.vehicles,
-            "conversation_history": self.conversation_history,
-            "booking_saved":        self.booking_saved,
-            "complaint_saved":      self.complaint_saved,
-            "usage":                self.usage,
-            "client":               self.client,
+            "response":        self.response,
+            "intent":          self.intent,
+            "vehicles":        self.vehicles,
+            "booking_saved":   self.booking_saved,
+            "complaint_saved": self.complaint_saved,
+            "usage":           self.usage,
+            "client":          self.client,
+            "lead":            self.lead,
         }

@@ -6,13 +6,20 @@ from dashboard_services.booking_services import BookingServices
 
 
 def booking_node(state: AgentState) -> dict:
-    client  = state.get("client")
-    filters = state.get("filters", {})
+    lead = state.get("lead", {})
 
-    purpose = filters.get("vehicle_name") or filters.get("company")
+    name    = lead.get("name")
+    phone   = lead.get("phone")
+    date    = lead.get("appointment_date")
+    purpose = lead.get("booking_purpose")
 
+    # Require name, phone, and date before saving
+    if not (name and phone and date):
+        return {"booking_saved": False}
+
+    client = state.get("client")
     try:
-        BookingServices.create_booking(client=client, purpose=purpose)
+        BookingServices.create_booking(client=client, purpose=purpose, date=date)
         booking_saved = True
     except Exception:
         booking_saved = False
