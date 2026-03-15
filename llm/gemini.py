@@ -13,7 +13,7 @@ def get_gemini() -> ChatOpenAI:
         # Gemini Flash via OpenRouter (OpenAI-compatible endpoint)
         _llm = ChatOpenAI(
             model="google/gemini-2.0-flash-001",
-            api_key=os.getenv("OPENROUTER_API_KEY"),
+            api_key=os.getenv("OPENROUTER_API_KEY") or "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",
             base_url="https://openrouter.ai/api/v1",
             temperature=0.3,
             max_tokens=1024,
