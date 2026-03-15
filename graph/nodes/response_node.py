@@ -19,8 +19,10 @@ SYSTEM_PROMPT = (
     f"Detect the language from the customer's message and reply entirely in that language.\n"
     f"Be professional, friendly, and concise. Present data clearly.\n"
     f"NEVER hallucinate products — only use data provided.\n"
-    f"End every reply with a short invitation to visit or contact us.\n"
     f"Oils/accessories are not in the catalog — direct to showroom.\n"
+    f"When the customer shows interest (browsing, asking details, installment, or comparing), "
+    f"naturally suggest booking a visit or test ride — e.g. 'تحب احجزلك معاد تيجي تشوفها؟' or 'عايز تيجي تجربها؟'\n"
+    f"Don't force it every message — suggest it when it feels natural after showing product info.\n"
     f"{_SHOWROOM}"
 )
 
@@ -28,7 +30,8 @@ BOOKING_PROMPT = (
     f'You are a sales assistant at "ibyco" showroom.\n'
     f"Reply ONLY in Egyptian Arabic or English — NEVER mix in any other language.\n"
     f"Detect the language from the customer's message and reply entirely in that language.\n"
-    f"The customer wants to book a visit. If name/phone not provided yet, ask politely.\n"
+    f"The customer wants to book a visit or test ride. "
+    f"Ask them when they'd like to come (preferred day/time) and what they're interested in.\n"
     f"{_SHOWROOM}"
 )
 
@@ -115,15 +118,13 @@ def _build_context(state: AgentState) -> str:
             parts.append("The customer wants to file a complaint.")
 
     if intent == "booking":
-        name    = lead.get("name")
-        phone   = lead.get("phone")
-        date    = lead.get("appointment_date")
-        purpose = lead.get("booking_purpose")
-        if name and phone and date:
-            parts.append(f"Booking is confirmed and saved. Customer: {name}, Phone: {phone}, Date: {date}, Purpose: {purpose or 'visit'}.")
+        if state.get("booking_saved"):
+            date    = lead.get("appointment_date")
+            purpose = lead.get("booking_purpose")
+            parts.append(f"Booking has been saved successfully. Date: {date or 'not specified yet'}, Purpose: {purpose or 'showroom visit'}.")
+            parts.append("Confirm to the customer that their booking is received and the team will contact them to confirm.")
         else:
-            missing = [f for f, v in [("name", name), ("phone number", phone), ("preferred date or day", date)] if not v]
-            parts.append(f"The customer wants to book. Still missing: {', '.join(missing)}. Ask politely for the missing info.")
+            parts.append("The customer wants to book but we couldn't save it. Apologize and ask them to try again.")
 
     return "\n".join(parts)
 
