@@ -1,0 +1,57 @@
+services:
+
+  # ── Flask Application ────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ibyco_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # LLM / API Keys (set these in your .env file)
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # Flask settings
+      - SECRET_KEY=${SECRET_KEY:-change_this_secret_key_in_production}
+      # Database: override to use a persistent path inside the container
+      - SQLALCHEMY_DATABASE_URI=sqlite:////app/instance/Ibyco.db
+    volumes:
+      # Persist SQLite database across container restarts
+      - sqlite_data:/app/instance
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - ibyco_network
+
+  # ── Redis (Message Buffer) ───────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: ibyco_redis
+    restart: unless-stopped
+    # Enable keyspace notifications (required for the buffer expiry listener)
+    command: redis-server --notify-keyspace-events KEx --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ibyco_network
+
+
+# ── Named Volumes ────────────────────────────────────────────────
+volumes:
+  sqlite_data:
+  redis_data:
+
+
+# ── Networks ─────────────────────────────────────────────────────
+networks:
+  ibyco_network:
+    driver: bridge

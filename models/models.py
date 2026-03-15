@@ -218,3 +218,15 @@ class Booking(db.Model):
     status = db.Column(db.String(50), default="pending")
  
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+
+class ShowroomPage(db.Model):
+    __tablename__ = "showroom_pages"
+
+    id           = db.Column(db.Integer, primary_key=True)
+    page_id      = db.Column(db.String(100), unique=True, nullable=False)  # WhatsApp phone number ID أو Page ID
+    page_token   = db.Column(db.Text, nullable=False)                       # Permanent Access Token
+    phone_id     = db.Column(db.String(100))                                # WhatsApp Phone Number ID (للـ Cloud API)
+    platform_id  = db.Column(db.Integer, default=1)                         # 1=WhatsApp, 2=Messenger, ...
+    is_active    = db.Column(db.Boolean, default=True)
+ 

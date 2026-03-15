@@ -10,6 +10,12 @@ from dashboard_services.helmet_services import HelmetServices
 from dashboard_services.instalment_services import InstalmentServices
 from dashboard_services.motor_services import MotorServices
 from dashboard_services.booking_services import BookingServices
+import threading
+from parsers.whatsapp import parse_whatsapp_message  
+from service.redis_worker import add_to_buffer, start_redis_listener 
+
+
+
 
 
 
@@ -520,9 +526,66 @@ def api_chat():
     return jsonify(AgentResponse.from_result(result).to_dict())
 
 
-if __name__ == '__main__':
+
+
+
+
+VERIFY_TOKEN = "dangerMO"
+
+@app.route("/webhook", methods=["GET", "POST"])
+def whatsapp_webhook():
+    # 1. جزء التفعيل (Verification) - لشركة Meta
+    if request.method == "GET":
+        mode = request.args.get("hub.mode")
+        token = request.args.get("hub.verify_token")
+        challenge = request.args.get("hub.challenge")
+
+        if mode == "subscribe" and token == VERIFY_TOKEN:
+            print("[INFO] Webhook Verified!")
+            return challenge, 200
+        return "Verification failed", 403
+
+    # 2. جزء استقبال الرسائل (POST)
+    if request.method == "POST":
+        payload = request.json
+        
+        # ترجمة الـ JSON المعقد لشكل بسيط (IncomingMessage)
+        incoming_msg = parse_whatsapp_message(payload)
+        
+        if incoming_msg:
+            try:
+                # استخراج الـ Phone ID من مسار Meta الرسمي
+                # ده بنحتاجه كـ ID للصفحة في Redis
+                value = payload['entry'][0]['changes'][0]['value']
+                page_id = value['metadata']['phone_number_id']
+                
+                # إرسال الرسالة للمخزن المؤقت (Redis)
+                # platform_id=1 يعني واتساب رسمي
+                add_to_buffer(
+                    platform_id=1,           
+                    page_id=page_id,         
+                    sender_id=incoming_msg.sender_id, 
+                    text=incoming_msg.text
+                )
+                
+                print(f"[WEBHOOK] Message from {incoming_msg.sender_id} sent to buffer.")
+            
+            except Exception as e:
+                print(f"[ERROR] Webhook processing failed: {e}")
+
+    # الرد فوراً بـ 200 OK عشان واتساب ميعتبرش السيرفر واقع
+    return "OK", 200
+
+if __name__ == "__main__":
+   
+    worker_thread = threading.Thread(target=start_redis_listener, daemon=True)
+    worker_thread.start()
+    
+    print("[SYSTEM] Redis Listener started...")
+     
+    
+
     with app.app_context():
         db.create_all()
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
+    app.run(host="0.0.0.0", port=5000, debug=True,use_reloader=False)
 

@@ -1,19 +1,22 @@
 # Flask dashboard
 flask
-flask-sqlalchem
-Flask-Migratey
+flask-sqlalchemy
+flask-migrate
 flask-login
 
 # LangGraph / LangChain
 langgraph>=0.2.0
 langchain>=0.3.0
 langchain-core>=0.3.0
-langchain_openai
+langchain-google-genai      # ضيف ده لو بتستخدم Gemini (ضروري جداً)
+langchain-openai
 langchain-huggingface>=0.1.0
-langchain_ollama>=0.3.10
+langchain-ollama>=0.2.0     # عدلت النسخة لضمان التوافق
 
-# Database
+# Database & Tools
 sqlalchemy>=2.0.0
+psycopg2-binary            # ضروري لو هتنقل لـ PostgreSQL على اللينكس مستقبلاً
+redis                      # ضيف ده عشان نظام الـ Buffering اللي عملناه بالـ Shadow Keys
 
 # Utilities
 python-dotenv>=1.0.0
@@ -23,8 +26,7 @@ numpy>=1.26.0
 openpyxl>=3.1.0
 pandas>=2.2.0
 huggingface_hub>=0.25.0
+faiss-cpu                  # ضيف ده لو بتستخدم FAISS عشان الـ RAG ما يضربش
 
 # Testing
 pytest>=7.0.0
-
-# Vector search: requires `ollama pull nomic-embed-text` before first use
