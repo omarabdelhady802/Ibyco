@@ -16,13 +16,17 @@ class BookingServices:
     # =========================
     @staticmethod
     def get_bookings_by_phone(phone=None):
-        if not phone:
-            return Booking.query.order_by(Booking.created_at.desc()).all()
-        client = Client.query.filter_by(phone_number=phone).first()
-        if not client:
-            return []
-        return Booking.query.filter_by(client_id=client.id).order_by(Booking.created_at.desc()).all()
 
+        query = Booking.query.join(Client)
+
+        if phone:
+            query = query.filter(Client.phone_number.ilike(f"%{phone}%"))
+        else:
+            query = query.filter(
+                Booking.status.notin_(["completed", "canceled"])
+            )
+
+        return query.all()
     # =========================
     # Get Booking By ID
     # =========================
