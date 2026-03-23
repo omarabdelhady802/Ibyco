@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1 class="mt-4">اضافة صفحة جديدة</h1>
+
+<form method="post" action="{{ url_for('new_page') }}">
+
+<div class="form-group">
+<label for="page_id">Page ID:</label>
+<input type="text" class="form-control" id="page_id" name="page_id" required>
+</div>
+
+<div class="form-group">
+<label for="page_token">Page Token:</label>
+<textarea class="form-control" id="page_token" name="page_token" required></textarea>
+</div>
+
+<div class="form-group">
+<label for="phone_id">Phone ID:</label>
+<input type="text" class="form-control" id="phone_id" name="phone_id">
+</div>
+
+<div class="form-group">
+<label for="platform_id">Platform:</label>
+<select class="form-control" id="platform_id" name="platform_id">
+<option value="1">WhatsApp</option>
+<option value="2">Messenger</option>
+</select>
+</div>
+
+<button type="submit" class="btn btn-primary mt-3">اضافة</button>
+
+</form>
+
+{% endblock %}

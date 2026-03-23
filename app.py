@@ -14,6 +14,7 @@ import threading
 from parsers.whatsapp import parse_whatsapp_message  
 from service.redis_worker import add_to_buffer, start_redis_listener 
 from service.message_processor import process_message
+from dashboard_services.showroom_page_services import ShowroomPageServices
 
 
 
@@ -475,6 +476,73 @@ def booking_details(booking_id):
         "booking_details.html",
         booking=booking,
         client=booking.client
+    )
+
+
+# routes for pages info 
+
+# this route for display pages
+@app.route('/pages')
+@login_required
+def pages():
+
+    pages = ShowroomPageServices.get_pages()
+
+    return render_template(
+        "pages.html",
+        pages=pages
+    )
+
+
+# this route for add new page
+@app.route('/pages/new', methods=['GET','POST'])
+@login_required
+def new_page():
+
+    if request.method == "POST":
+
+        page, msg = ShowroomPageServices.create_page(
+            request.form
+        )
+
+        if page:
+            flash(msg, "success")
+        else:
+            flash(msg, "danger")
+
+        return redirect(url_for("pages"))
+
+    return render_template("new_page.html")
+
+
+# this route for edit page
+@app.route('/pages/edit/<int:page_id>', methods=['GET','POST'])
+@login_required
+def edit_page(page_id):
+
+    page = ShowroomPageServices.get_page_by_id(page_id)
+
+    if not page:
+        flash("الصفحة غير موجودة", "danger")
+        return redirect(url_for("pages"))
+
+    if request.method == "POST":
+
+        page, msg = ShowroomPageServices.update_page(
+            page_id,
+            request.form
+        )
+
+        if page:
+            flash(msg, "success")
+        else:
+            flash(msg, "danger")
+
+        return redirect(url_for("pages"))
+
+    return render_template(
+        "edit_page.html",
+        page=page
     )
 
 

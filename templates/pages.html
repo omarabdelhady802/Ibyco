@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}الصفحات{% endblock %}
+
+{% block content %}
+
+<h1 class="mt-4">صفحات الواتساب و الفيسبوك</h1>
+
+<a class="btn btn-primary mt-3 mb-3" href="{{ url_for('new_page') }}">
+اضافة صفحة
+</a>
+
+<table class="table mt-4">
+
+<thead>
+<tr>
+<th>ID</th>
+<th>Page ID</th>
+<th>Phone ID</th>
+<th>Platform</th>
+<th>الحالة</th>
+<th>تعديل</th>
+</tr>
+</thead>
+
+<tbody>
+
+{% for page in pages %}
+<tr>
+
+<td>{{ page.id }}</td>
+<td>{{ page.page_id }}</td>
+<td>{{ page.phone_id }}</td>
+
+<td>
+{% if page.platform_id == 1 %}
+WhatsApp
+{% elif page.platform_id == 2 %}
+Messenger
+{% else %}
+Unknown
+{% endif %}
+</td>
+
+<td>
+{% if page.is_active %}
+مفعل
+{% else %}
+غير مفعل
+{% endif %}
+</td>
+
+<td>
+<a href="{{ url_for('edit_page', page_id=page.id) }}">
+تعديل
+</a>
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+
+{% endblock %}
