@@ -16,6 +16,7 @@ services:
       - SECRET_KEY=${SECRET_KEY:-change_this_secret_key_in_production}
       # Database: override to use a persistent path inside the container
       - SQLALCHEMY_DATABASE_URI=sqlite:////app/instance/Ibyco.db
+      - REDIS_HOST=redis
     volumes:
       # Persist SQLite database across container restarts
       - sqlite_data:/app/instance
@@ -32,8 +33,6 @@ services:
     restart: unless-stopped
     # Enable keyspace notifications (required for the buffer expiry listener)
     command: redis-server --notify-keyspace-events KEx --save 60 1 --loglevel warning
-    ports:
-      - "6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:

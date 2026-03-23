@@ -30,7 +30,7 @@ _db_path = os.path.join(os.path.dirname(__file__), "instance", "Ibyco.db")
 app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{_db_path}'
 app.config['SECRET_KEY'] = 'your_secret_key'
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False  # Disable auto-commit
+app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = False 
 login_manager = LoginManager(app)
 db.init_app(app)
 migrate = Migrate(app, db)

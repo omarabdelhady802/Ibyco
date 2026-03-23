@@ -28,5 +28,8 @@ pandas>=2.2.0
 huggingface_hub>=0.25.0
 faiss-cpu                  # ضيف ده لو بتستخدم FAISS عشان الـ RAG ما يضربش
 
+# Production server
+gunicorn>=21.2.0
+
 # Testing
 pytest>=7.0.0
