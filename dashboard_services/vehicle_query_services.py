@@ -68,15 +68,16 @@ def _normalize(s: str) -> str:
 
 
 def get_vehicle_by_name(name: str) -> Optional[dict]:
-    """Four-tier search (case-insensitive):
+    """Five-tier search (case-insensitive):
     1. SQL LIKE — consecutive substring in English or Arabic name.
+    1b. SQL LIKE — try each word individually (handles "هاسكي سكوتر" where "سكوتر" is the type).
     2. ALL query words are whole tokens in English name + company (exact multi-word match).
     3. MAJORITY (>=2/3) of words match across English + Arabic + company tokens.
-    4. Normalized match (strip punctuation/spaces then substring check).
+    4. Normalized match (strip punctuation/spaces then substring check on both names).
     """
     q = name.lower().strip()
 
-    # Tier 1 — SQL LIKE
+    # Tier 1 — SQL LIKE (full query as substring)
     row = (
         Motors.query
         .filter(
@@ -87,6 +88,25 @@ def get_vehicle_by_name(name: str) -> Optional[dict]:
     )
     if row:
         return _motor_to_dict(row)
+
+    # Tier 1b — SQL LIKE per word (handles queries like "هاسكي سكوتر" where
+    # "هاسكي" is the name and "سكوتر" is the type — match on individual words)
+    words_raw = name.strip().split()
+    if len(words_raw) > 1:
+        for word in words_raw:
+            w = word.strip()
+            if len(w) < 2:
+                continue
+            row = (
+                Motors.query
+                .filter(
+                    (func.lower(Motors.english_name).like(f"%{w.lower()}%"))
+                    | (Motors.arabic_name.like(f"%{w}%"))
+                )
+                .first()
+            )
+            if row:
+                return _motor_to_dict(row)
 
     # Tiers 2-4 load all rows once
     all_rows = Motors.query.all()
@@ -112,12 +132,22 @@ def get_vehicle_by_name(name: str) -> Optional[dict]:
             if sum(1 for w in words if w in toks) >= threshold:
                 return _motor_to_dict(m)
 
-    # Tier 4 — normalized substring
+    # Tier 4 — normalized substring (check BOTH English and Arabic names)
     q_norm = _normalize(q)
     if q_norm:
         for m in all_rows:
-            if q_norm in _normalize(str(m.english_name)):
+            if q_norm in _normalize(str(m.english_name)) or q_norm in _normalize(str(m.arabic_name)):
                 return _motor_to_dict(m)
+
+    # Tier 4b — try each word normalized individually
+    if len(words) > 1:
+        for w in words:
+            w_norm = _normalize(w)
+            if len(w_norm) < 2:
+                continue
+            for m in all_rows:
+                if w_norm in _normalize(str(m.english_name)) or w_norm in _normalize(str(m.arabic_name)):
+                    return _motor_to_dict(m)
 
     return None
 

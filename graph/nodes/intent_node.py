@@ -52,12 +52,20 @@ Important rules:
 - If asking about working hours, branches, or address → intent = "other"
 - "latest model" or "newest release" without a specific name = browse, NOT details
 - details ONLY when the model name is explicitly mentioned
+- If asking about installment PROCESS, required PAPERS/DOCUMENTS, or general installment questions (e.g. "ورق التقسيط", "ايه الورق المطلوب", "إجراءات التقسيط") → intent = "other", NOT "installment"
+- "installment" intent is ONLY for calculating installment amounts for a specific product or budget
+
+CRITICAL — Conversation continuity:
+- You have the client's conversation history summary and the last bot reply below.
+- If the user refers to a product discussed earlier (e.g. "كام سعره", "عايز اقسطه", "ايه الالوان", "show me installments", "how much is it") — you MUST extract the vehicle_name from the conversation history and put it in filters.vehicle_name.
+- NEVER leave vehicle_name null if it was mentioned in the conversation history and the user is clearly referring to it.
+- Similarly, carry forward the product_type from conversation history if the user is following up on a previous product.
 
 Product type definitions:
 - motorcycle: موتوسيكل / motorbike / دراجة نارية
-- scooter: اسكوتر / سكوتر / scooter
+- scooter: اسكوتر / سكوتر / scooter — includes any model with "سكوتر" or "scooter" in the name
 - helmet: خوذة / هيلمت / helmet
-- null: unspecified (default: motorcycle)"""
+- null: ONLY when the product type truly cannot be determined from the message OR conversation history"""
 
 
 def intent_node(state: AgentState) -> dict:
