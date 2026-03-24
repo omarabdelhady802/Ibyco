@@ -654,13 +654,7 @@ def whatsapp_webhook():
 
 if __name__ == "__main__":
    
-    worker_thread = threading.Thread(target=start_redis_listener, daemon=True)
-    worker_thread.start()
-    
-    print("[SYSTEM] Redis Listener started...")
-     
-    
-
+ 
     with app.app_context():
         db.create_all()
     app.run(host="0.0.0.0", port=5000, debug=False,use_reloader=False)

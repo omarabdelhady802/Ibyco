@@ -3,7 +3,7 @@ flask
 flask-sqlalchemy
 flask-migrate
 flask-login
-
+gunicorn
 # LangGraph / LangChain
 langgraph>=0.2.0
 langchain>=0.3.0
