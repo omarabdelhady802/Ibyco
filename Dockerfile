@@ -10,37 +10,37 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
+# Install Python dependencies into a separate directory
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
     pip install --prefix=/install --no-cache-dir -r requirements.txt
 
-
-# ── Stage 2: Runtime ──────────────────────────────────────────────
+# ── Stage 2: Runtime ──
 FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install only runtime system libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from builder
-COPY --from=builder /install /usr/local
+# Create non-root user first
+RUN useradd -m appuser
 
-# Copy application source code
+# Copy dependencies and app
+COPY --from=builder /install /usr/local
 COPY . .
 
-# Create directory for SQLite database persistence
-RUN mkdir -p /app/instance
+# Create instance folder and fix ownership
+RUN mkdir -p /app/instance && chown -R appuser:appuser /app
 
-# Expose Flask port
+# Switch to non-root user
+USER appuser
+
 EXPOSE 5000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/')" || exit 1
-
-# Use gunicorn for production (more stable than Flask dev server)
-CMD ["gunicorn", "--config", "gunicorn.conf.py", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "120", "app:app"]
+# Start Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--threads", "4", "--timeout", "120", "--access-logfile", "-", "--error-logfile", "-", "app:app"]
