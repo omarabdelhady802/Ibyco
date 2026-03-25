@@ -39,7 +39,7 @@ Intent definitions:
 - browse: wants to see products generally, asks "what do you have", "what's available", "latest model", "price ranges" without specifying a number
 - filter: wants to filter by a specific price number, brand, installment, or criteria (e.g. "suitable for kids", "cheapest", "budget of X EGP")
 - details: asks about a specific model BY NAME (e.g. "tell me about jet x", "specs of haojue k4")
-- installment: asks about installment plans, payment methods, or monthly payments
+- installment: asks about installment plans, payment methods, or monthly payments FOR A SPECIFIC VEHICLE (not general questions about papers/documents)
 - compare: wants to compare two models (extract vehicle_name and vehicle_name_2)
 - booking: wants to book an appointment, visit, or buy (e.g. "I want to buy", "book a test ride")
 - complaint: complaining about a product, service, or bad experience
@@ -50,22 +50,16 @@ Important rules:
 - If the customer mentions a product NOT in the catalog (oils, accessories, spare parts) → intent = "other" even if a model name is mentioned
 - If asking about offers/discounts without mentioning a product → intent = "other"
 - If asking about working hours, branches, or address → intent = "other"
+- If asking about installment papers/documents (الأوراق المطلوبة للتقسيط) without a specific vehicle → intent = "other"
 - "latest model" or "newest release" without a specific name = browse, NOT details
 - details ONLY when the model name is explicitly mentioned
-- If asking about installment PROCESS, required PAPERS/DOCUMENTS, or general installment questions (e.g. "ورق التقسيط", "ايه الورق المطلوب", "إجراءات التقسيط") → intent = "other", NOT "installment"
-- "installment" intent is ONLY for calculating installment amounts for a specific product or budget
-
-CRITICAL — Conversation continuity:
-- You have the client's conversation history summary and the last bot reply below.
-- If the user refers to a product discussed earlier (e.g. "كام سعره", "عايز اقسطه", "ايه الالوان", "show me installments", "how much is it") — you MUST extract the vehicle_name from the conversation history and put it in filters.vehicle_name.
-- NEVER leave vehicle_name null if it was mentioned in the conversation history and the user is clearly referring to it.
-- Similarly, carry forward the product_type from conversation history if the user is following up on a previous product.
+- CRITICAL: If the customer's message refers to a vehicle from the conversation history (e.g. "عايز اقسطه", "كام سعره", "عايز اعرف تقسيطه") without naming it, you MUST extract the vehicle_name from the Client history summary or Last bot reply. Do NOT leave vehicle_name null if a vehicle was clearly discussed before.
 
 Product type definitions:
 - motorcycle: موتوسيكل / motorbike / دراجة نارية
-- scooter: اسكوتر / سكوتر / scooter — includes any model with "سكوتر" or "scooter" in the name
+- scooter: اسكوتر / سكوتر / scooter
 - helmet: خوذة / هيلمت / helmet
-- null: ONLY when the product type truly cannot be determined from the message OR conversation history"""
+- null: unspecified (default: motorcycle)"""
 
 
 def intent_node(state: AgentState) -> dict:

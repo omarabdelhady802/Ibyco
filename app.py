@@ -35,8 +35,6 @@ login_manager = LoginManager(app)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-with app.app_context():
-    db.create_all()
 #######################################################
 
 
