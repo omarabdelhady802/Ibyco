@@ -115,11 +115,11 @@ def get_vehicle_by_name(name: str) -> Optional[dict]:
             if sum(1 for w in words if w in toks) >= threshold:
                 return _motor_to_dict(m)
 
-    # Tier 4 — normalized substring
+    # Tier 4 — normalized substring (English + Arabic names)
     q_norm = _normalize(q)
     if q_norm:
         for m in all_rows:
-            if q_norm in _normalize(str(m.english_name)):
+            if q_norm in _normalize(str(m.english_name)) or q_norm in _normalize(str(m.arabic_name)):
                 return _motor_to_dict(m)
 
     return None
