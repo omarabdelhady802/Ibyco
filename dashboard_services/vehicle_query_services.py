@@ -94,13 +94,13 @@ def get_vehicle_by_name(name: str) -> Optional[dict]:
     # Tiers 2-4 load all rows once
     all_rows = Motors.query.all()
 
-    words = q.split()
+    words = [_normalize(w) for w in q.split() if w]
     if words:
         def _all_tokens(m):
             return (
-                set(re.split(r'\W+', str(m.english_name).lower()))
-                | set(re.split(r'\W+', str(m.arabic_name)))
-                | set(re.split(r'\W+', str(m.company).lower()))
+                {_normalize(t) for t in re.split(r'\W+', str(m.english_name).lower())}
+                | {_normalize(t) for t in re.split(r'\W+', str(m.arabic_name))}
+                | {_normalize(t) for t in re.split(r'\W+', str(m.company).lower())}
             )
 
         # Tier 2 — ALL words match (precise)
