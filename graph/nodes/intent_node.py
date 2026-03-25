@@ -53,7 +53,7 @@ Important rules:
 - If asking about installment papers/documents (الأوراق المطلوبة للتقسيط) without a specific vehicle → intent = "other"
 - "latest model" or "newest release" without a specific name = browse, NOT details
 - details ONLY when the model name is explicitly mentioned
-- CRITICAL: If the customer's message refers to a vehicle from the conversation history (e.g. "عايز اقسطه", "كام سعره", "عايز اعرف تقسيطه") without naming it, you MUST extract the vehicle_name from the Client history summary or Last bot reply. Do NOT leave vehicle_name null if a vehicle was clearly discussed before.
+- CRITICAL: If the customer's message refers to information from the conversation history without repeating it, you MUST extract it from the Client history summary or Last bot reply. This includes vehicle_name, down_payment, months, company, product_type, and any other filter. For example: "عايز اقسطه" after discussing a vehicle → extract vehicle_name. "٥٠ الف" after asking about installment → extract as down_payment with the vehicle_name from history. NEVER leave a field null if it was clearly mentioned in the conversation before.
 
 Product type definitions:
 - motorcycle: موتوسيكل / motorbike / دراجة نارية

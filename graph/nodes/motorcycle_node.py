@@ -29,6 +29,14 @@ def motorcycle_node(state: AgentState) -> dict:
         ask_clarification = "vehicle_name"
         return {"vehicles": [], "ask_clarification": ask_clarification}
 
+    # If a vehicle name is provided, always try to find it first (handles wrong routing)
+    if filters.get("vehicle_name") and intent in ("details", "browse", "filter"):
+        name = _resolve_name(filters)
+        v = get_vehicle_by_name(name)
+        if v:
+            vehicles = [v] + get_similar_vehicles(v, count=3)
+            return {"vehicles": vehicles, "ask_clarification": ask_clarification}
+
     if intent == "details":
         name = _resolve_name(filters)
         v = get_vehicle_by_name(name)
