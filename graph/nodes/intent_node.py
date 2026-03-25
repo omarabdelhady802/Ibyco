@@ -9,8 +9,11 @@ from graph.state import AgentState
 from llm.gemini import get_gemini
 
 SYSTEM_PROMPT = """You are an intelligent assistant for "ibyco" motorcycle and accessories showroom.
-Your task is to analyse the customer's message and extract intent and structured information.
+Your task is to analyse the customer's CURRENT message combined with the conversation history (Client history summary + Last bot reply) and extract intent and structured information.
 The customer may write in Arabic (Egyptian dialect), English, or mixed — you must understand all.
+
+IMPORTANT: Fill every JSON field using ALL available context — the current message AND the conversation history.
+If the customer said a vehicle name, down payment, months, company, or any detail in a PREVIOUS message (visible in the summary or last bot reply), carry it forward into the JSON. Do NOT leave fields null if they were mentioned before. Treat the conversation as continuous — the customer should never have to repeat themselves.
 
 Return JSON only (no extra text) in this format:
 {
@@ -53,8 +56,6 @@ Important rules:
 - If asking about installment papers/documents (الأوراق المطلوبة للتقسيط) without a specific vehicle → intent = "other"
 - "latest model" or "newest release" without a specific name = browse, NOT details
 - details ONLY when the model name is explicitly mentioned
-- CRITICAL: If the customer's message refers to information from the conversation history without repeating it, you MUST extract it from the Client history summary or Last bot reply. This includes vehicle_name, down_payment, months, company, product_type, and any other filter. For example: "عايز اقسطه" after discussing a vehicle → extract vehicle_name. "٥٠ الف" after asking about installment → extract as down_payment with the vehicle_name from history. NEVER leave a field null if it was clearly mentioned in the conversation before.
-
 Product type definitions:
 - motorcycle: موتوسيكل / motorbike / دراجة نارية
 - scooter: اسكوتر / سكوتر / scooter
@@ -107,6 +108,19 @@ def intent_node(state: AgentState) -> dict:
 
     filters = data.get("filters", {})
     filters = {k: v for k, v in filters.items() if v is not None and v != "null"}
+
+    # If vehicle_name exists but product_type is unknown, resolve from DB
+    if not product_type and filters.get("vehicle_name"):
+        from dashboard_services.vehicle_query_services import get_vehicle_by_name
+        v = get_vehicle_by_name(filters["vehicle_name"])
+        if v and v.get("type"):
+            vtype = v["type"]
+            if "اسكوتر" in vtype or "سكوتر" in vtype:
+                product_type = "scooter"
+            elif "خوذ" in vtype or "هيلم" in vtype:
+                product_type = "helmet"
+            else:
+                product_type = "motorcycle"
 
     lead_info = data.get("lead_info", {})
     existing_lead = state.get("lead", {})
