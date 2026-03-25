@@ -44,6 +44,12 @@ def motorcycle_node(state: AgentState) -> dict:
             vehicles = [v] + get_similar_vehicles(v, count=3)
 
     elif intent == "installment" and filters.get("vehicle_name"):
+        # First check if the vehicle actually exists before asking for down payment
+        name = _resolve_name(filters)
+        v = get_vehicle_by_name(name)
+        if not v:
+            ask_clarification = "vehicle_name1"
+            return {"vehicles": [], "ask_clarification": ask_clarification}
         if "down_payment" not in filters:
             ask_clarification = "down_payment"
             return {"vehicles": [], "ask_clarification": ask_clarification}

@@ -110,8 +110,8 @@ class ClientServices:
 
         now = datetime.now(timezone.utc)
         client.chat_summary = new_summary or client.chat_summary or ""
-        client.last_user_reply = user_message[:500]
-        client.last_bot_reply = bot_response[:500]
+        client.last_user_reply = user_message
+        client.last_bot_reply = bot_response
         client.last_user_message_at = now
         client.last_bot_message_at = now
 

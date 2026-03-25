@@ -20,6 +20,7 @@ SYSTEM_PROMPT = (
     f"Be professional, friendly, and concise. Present data clearly.\n"
     f"NEVER hallucinate products — only use data provided.\n"
     f"Oils/accessories are not in the catalog — direct to showroom.\n"
+    f"Showroom installment requirements papers and documents: صورة بطاقة المشتري + صورة بطاقة الضامن + إيصال.\n"
     f"When the customer shows interest (browsing, asking details, installment, or comparing), "
     f"naturally suggest booking a visit or test ride — e.g. 'تحب احجزلك معاد تيجي تشوفها؟' or 'عايز تيجي تجربها؟'\n"
     f"Don't force it every message — suggest it when it feels natural after showing product info.\n"
@@ -78,6 +79,8 @@ def _build_context(state: AgentState) -> str:
     # Clarification needed before we can calculate
     if ask_clarification == "vehicle_name":
         return "The customer wants installment info but didn't specify the model. Ask them which model or product they want installment for."
+    if ask_clarification == "vehicle_name1":
+        return "The customer wants installment info but the model name wasn't found in the catalog. Apologize and ask them to clarify the model name."
     if ask_clarification == "down_payment":
         return "The customer wants installment info but didn't mention the down payment. Ask them how much down payment they will pay."
 
@@ -185,11 +188,23 @@ def response_node(state: AgentState) -> dict:
     sys_content += f"""
 
 ---
-CRM TASK: After writing your reply, append a section that updates the client summary.
+CRM TASK: After writing your reply, append an updated client state snapshot.
 
-EXISTING SUMMARY:
+RULES FOR THE SUMMARY:
+- This summary is used by the AI in the NEXT turn to understand the conversation state.
+- REPLACE the old summary entirely — do NOT append to it or repeat old content.
+- Write it as a single clean paragraph, max 1000 chars, in English.
+- Keep only the LATEST value for each piece of info — if the customer changed their mind, keep the new value only.
+- Always mention these if known: intent, product type, vehicle name(s), down payment, months, budget, brand, customer name, customer phone, booking purpose, appointment date, what the bot last asked the customer.
+- If the current intent is 'other' or 'greeting', preserve all previous vehicle and filter context — do NOT wipe them.
+- If the customer just greeted or asked something off-topic, keep the previous vehicle/filters in the paragraph.
+- If the customer switched topic in this turn, clearly mark: "TOPIC SWITCHED — previous vehicle/filters no longer relevant."
+ 
+
+EXISTING SUMMARY :
 {old_summary or '(new client)'}
 
+CURRENT TURN:
 INTENT: {intent or 'unknown'}
 FILTERS: {filters}
 LEAD: {lead}
@@ -199,8 +214,10 @@ Format your full output EXACTLY like this:
 your reply to the customer here
 </REPLY>
 <SUMMARY>
-updated merged summary here (max 500 chars, bullet points, English)
+updated paragraph snapshot here
 </SUMMARY>"""
+
+
 
     messages = [
         SystemMessage(content=sys_content),
@@ -227,7 +244,7 @@ updated merged summary here (max 500 chars, bullet points, English)
             # LLM skipped opening tag — strip any leaked closing tags
             response_text = re.sub(r"</?(REPLY|SUMMARY)>.*", "", raw, flags=re.DOTALL).strip()
         if summary_match:
-            new_summary = summary_match.group(1).strip()[:2000]
+            new_summary = summary_match.group(1).strip()
 
         meta = getattr(result, "usage_metadata", None) or getattr(result, "response_metadata", {}).get("token_usage", {})
         if meta:

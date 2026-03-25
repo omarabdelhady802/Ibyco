@@ -13,7 +13,19 @@ Your task is to analyse the customer's CURRENT message combined with the convers
 The customer may write in Arabic (Egyptian dialect), English, or mixed — you must understand all.
 
 IMPORTANT: Fill every JSON field using ALL available context — the current message AND the conversation history.
-If the customer said a vehicle name, down payment, months, company, or any detail in a PREVIOUS message (visible in the summary or last bot reply), carry it forward into the JSON. Do NOT leave fields null if they were mentioned before. Treat the conversation as continuous — the customer should never have to repeat themselves.
+Only carry forward context from previous messages if the current message is a CONTINUATION of the same topic (e.g. answering a question the bot asked, or adding more detail to the same request).
+If the customer is clearly asking about something NEW or DIFFERENT, start fresh — do NOT carry forward old vehicle names, filters, or down payments from previous turns.
+
+Signs of a topic CONTINUATION (carry forward previous context):
+- Customer is answering a question the bot asked (e.g. bot asked for down payment, customer replies with a number)
+- Customer adds detail to the same vehicle (e.g. "عايز اعرف التقسيط" after asking about a specific model)
+- Customer says "طيب" or "تمام" followed by more detail about the SAME vehicle
+
+Signs of a topic SWITCH (start fresh, ignore old filters):
+- Customer mentions a DIFFERENT product name than before
+- Customer asks a completely new question unrelated to the previous topic
+- Customer uses phrases like "غير كده", "ايه عندكم تاني", "عندكم غير ده", "خليني اشوف حاجة تانية"
+- Customer asks about a different product type (e.g. was asking about motorcycle, now asks about scooter)
 
 Return JSON only (no extra text) in this format:
 {
@@ -44,7 +56,7 @@ Intent definitions:
 - details: asks about a specific model BY NAME (e.g. "tell me about jet x", "specs of haojue k4")
 - installment: asks about installment plans, payment methods, or monthly payments FOR A SPECIFIC VEHICLE (not general questions about papers/documents)
 - compare: wants to compare two models (extract vehicle_name and vehicle_name_2)
-- booking: wants to book an appointment, visit, or buy (e.g. "I want to buy", "book a test ride")
+- booking: wants to book an appointment, visit, or buy (e.g. "I want to buy", "book a test ride","accept invetation to the showroom")
 - complaint: complaining about a product, service, or bad experience
 - greeting: general greeting or small talk
 - other: general questions not directly about a specific product (e.g. offers, working hours, branches, oils, accessories, after-sales service)
@@ -56,6 +68,10 @@ Important rules:
 - If asking about installment papers/documents (الأوراق المطلوبة للتقسيط) without a specific vehicle → intent = "other"
 - "latest model" or "newest release" without a specific name = browse, NOT details
 - details ONLY when the model name is explicitly mentioned
+- For booking intent: always try to infer booking_purpose from context. 
+  If the customer was previously asking about a specific vehicle → booking_purpose = "test ride" or "purchase".
+  If the customer was asking general questions → booking_purpose = "inquiry".
+  Never leave booking_purpose null if there is any context available — make a reasonable inference.
 Product type definitions:
 - motorcycle: موتوسيكل / motorbike / دراجة نارية
 - scooter: اسكوتر / سكوتر / scooter
@@ -66,7 +82,19 @@ Product type definitions:
 def intent_node(state: AgentState) -> dict:
     llm = get_gemini()
     message = state["current_message"]
+    try:
+        known_brands_set = get_all_brands()  # set for lookup
+        known_brands_str = ", ".join(sorted(known_brands_set))
+    except Exception:
+        known_brands_set = {"sym", "honda", "yamaha", "haojue", "keeway","هاوجى","vigory","dayun"}
+        known_brands_str = "sym, honda, yamaha, haojue, keeway ,هاوجى ,vigory ,dayun ,بينيللى"
 
+    system = SYSTEM_PROMPT.replace(
+        "- null: unspecified (default: motorcycle)",
+        f"- null: unspecified (default: motorcycle)\n\nKnown brands/companies in catalog (use company field for these): {known_brands_str}\nAnything else that is not a known brand → treat as vehicle_name, NOT company."
+    )
+
+   
     client = state.get("client")
     chat_summary  = (client.chat_summary   or "") if client else ""
     last_bot_reply = (client.last_bot_reply or "") if client else ""
@@ -77,7 +105,7 @@ def intent_node(state: AgentState) -> dict:
     if last_bot_reply:
         client_ctx += f"\nLast bot reply to this client:\n{last_bot_reply}"
 
-    system = SYSTEM_PROMPT + client_ctx if client_ctx else SYSTEM_PROMPT
+    system = system + client_ctx if client_ctx else system
 
     messages = [
         SystemMessage(content=system),
@@ -106,8 +134,16 @@ def intent_node(state: AgentState) -> dict:
     if product_type == "null":
         product_type = None
 
+
+    
     filters = data.get("filters", {})
     filters = {k: v for k, v in filters.items() if v is not None and v != "null"}
+    vehicle_nn =   filters.get("vehicle_name") or None
+    if vehicle_nn == "null":
+        vehicle_nn = None
+
+    print(product_type)
+
 
     # If vehicle_name exists but product_type is unknown, resolve from DB
     if not product_type and filters.get("vehicle_name"):
@@ -115,6 +151,23 @@ def intent_node(state: AgentState) -> dict:
         v = get_vehicle_by_name(filters["vehicle_name"])
         if v and v.get("type"):
             vtype = v["type"]
+            if "اسكوتر" in vtype or "سكوتر" in vtype:
+                product_type = "scooter"
+            elif "خوذ" in vtype or "هيلم" in vtype:
+                product_type = "helmet"
+            else:
+                product_type = "motorcycle"
+
+    company_val = filters.get("company", "").lower().strip()
+
+    if (not vehicle_nn
+        and company_val
+        and company_val not in known_brands_set
+        and intent in ("details", "installment", "compare", "browse", "filter")):
+        v = get_vehicle_by_name(filters["company"])
+        if v and v.get("type"):
+            vtype = v["type"]
+            filters["vehicle_name"] = v["name_en"]
             if "اسكوتر" in vtype or "سكوتر" in vtype:
                 product_type = "scooter"
             elif "خوذ" in vtype or "هيلم" in vtype:

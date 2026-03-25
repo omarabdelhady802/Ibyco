@@ -32,6 +32,11 @@ def _motor_to_dict(motor: Motors) -> dict:
 # Vehicle queries
 # ---------------------------------------------------------------------------
 
+def get_all_brands() -> set:
+    """Return all known company/brand names from the DB as lowercase set."""
+    rows = Motors.query.with_entities(Motors.company).distinct().all()
+    return {r.company.lower().strip() for r in rows if r.company}
+
 def get_vehicles(
     filters: dict = None,
     limit: int = 6,
