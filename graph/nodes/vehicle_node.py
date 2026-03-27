@@ -7,7 +7,6 @@ or missing product_type never blocks finding the right vehicle.
 import json
 from graph.state import AgentState
 from dashboard_services.vehicle_query_services import (
-    get_price_spread,
     get_vehicle_by_name,
     get_vehicles,
     calculate_custom_installment,
@@ -45,25 +44,42 @@ def vehicle_node(state: AgentState) -> dict:
         parts = [filters.get("company", ""), filters.get("vehicle_name", "")]
         return " ".join(p for p in parts if p).strip()
 
-    # Total count for the type (or all vehicles if type unknown)
-    total_count = get_total_count({"type": db_type} if db_type else {})
+    # Build DB filter dict — includes type AND company when present
+    db_filters = {}
+    if db_type:
+        db_filters["type"] = db_type
+    if filters.get("company"):
+        db_filters["company"] = filters["company"]
+
+    total_count = get_total_count(db_filters)
+
+    # Track pagination offset across turns
+    prev_offset = state.get("page_offset") or 0
+    if show_more:
+        offset = prev_offset + PAGE_SIZE
+    else:
+        offset = 0
 
     # --- Installment without vehicle name or budget → ask which vehicle ---
     if intent == "installment" and not filters.get("vehicle_name") and not filters.get("max_installment_12"):
         ask_clarification = "vehicle_name"
-        return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count}
+        return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count, "page_offset": offset}
 
-    # --- Vehicle name provided → always try name lookup first (type-agnostic) ---
-    if filters.get("vehicle_name") and intent not in ("installment",):
+    # --- Vehicle name provided (and NOT show_more) → name lookup first ---
+    if filters.get("vehicle_name") and intent not in ("installment",) and not show_more:
         name = _resolve_name(filters)
         v = get_vehicle_by_name(name)
         if v:
             vehicles = [v] + get_similar_vehicles(v, count=3)
-            return {"vehicles": vehicles, "ask_clarification": ask_clarification, "total_count": total_count}
+            return {"vehicles": vehicles, "ask_clarification": ask_clarification, "total_count": total_count, "page_offset": 0}
 
     # ----- Intent handlers -----
 
-    if intent == "details":
+    if show_more or intent == "browse":
+        # Browse / show more — paginated, sorted by price
+        vehicles = get_vehicles(db_filters, limit=PAGE_SIZE, offset=offset, sort_by="price")
+
+    elif intent == "details":
         name = _resolve_name(filters)
         v = get_vehicle_by_name(name)
         if v:
@@ -74,10 +90,10 @@ def vehicle_node(state: AgentState) -> dict:
         v = get_vehicle_by_name(name)
         if not v:
             ask_clarification = "vehicle_name1"
-            return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count}
+            return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count, "page_offset": offset}
         if "down_payment" not in filters:
             ask_clarification = "down_payment"
-            return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count}
+            return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count, "page_offset": offset}
 
         months = filters.get("months")
         down_payment = filters.get("down_payment", 0)
@@ -124,17 +140,13 @@ def vehicle_node(state: AgentState) -> dict:
             })
             vehicles = json.loads(raw)
         else:
-            offset = PAGE_SIZE if show_more else 0
-            type_filter = {"type": db_type} if db_type else {}
-            vehicles = get_vehicles(type_filter, limit=PAGE_SIZE, offset=offset, sort_by="price")
+            vehicles = get_vehicles(db_filters, limit=PAGE_SIZE, offset=offset, sort_by="price")
 
     else:
-        # browse
-        offset = PAGE_SIZE if show_more else 0
-        type_filter = {"type": db_type} if db_type else {}
-        vehicles = get_vehicles(type_filter, limit=PAGE_SIZE, offset=offset, sort_by="price")
+        # Default browse
+        vehicles = get_vehicles(db_filters, limit=PAGE_SIZE, offset=offset, sort_by="price")
 
-    # When show_more returns nothing (or browse with no results), tell response about ALL other available types
+    # When show_more returns nothing, tell response about ALL other available types
     other_types_hint = None
     if show_more and not vehicles:
         other_counts = {}
@@ -143,7 +155,6 @@ def vehicle_node(state: AgentState) -> dict:
                 cnt = get_total_count({"type": ar_type})
                 if cnt > 0:
                     other_counts[key] = cnt
-        # Also count helmets
         helmet_count = get_total_count({"type": "خوذ"})
         if helmet_count > 0:
             other_counts["helmet"] = helmet_count
@@ -155,4 +166,5 @@ def vehicle_node(state: AgentState) -> dict:
         "ask_clarification": ask_clarification,
         "total_count": total_count,
         "other_types_hint": other_types_hint,
+        "page_offset": offset,
     }

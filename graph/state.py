@@ -17,5 +17,6 @@ class AgentState(TypedDict):
     ask_clarification: Optional[str]             # "down_payment" | "vehicle_name" | None — ask user for missing info
     total_count: Optional[int]                   # total matching vehicles in DB (so response knows if there are more)
     other_types_hint: Optional[Dict[str, int]]   # other available product types when current type has no more results
+    page_offset: Optional[int]                    # current pagination offset for browse/filter
     intent_usage: Optional[Dict[str, int]]       # token counts from intent_node LLM call
     usage: Optional[Dict[str, int]]              # token counts from response_node LLM call
