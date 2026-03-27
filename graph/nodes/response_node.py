@@ -18,6 +18,7 @@ SYSTEM_PROMPT = (
     f"Reply ONLY in Egyptian Arabic or English — NEVER mix in any other language.\n"
     f"Detect the language from the customer's message and reply entirely in that language.\n"
     f"Be professional, friendly, and concise. Present data clearly.\n"
+    f"IMPORTANT: When showing a list of products, you MUST include EVERY product from the data — never skip or summarize. Show ALL of them.\n"
     f"NEVER hallucinate products — only use data provided.\n"
     f"Oils/accessories are not in the catalog — direct to showroom.\n"
     f"Showroom installment requirements papers and documents: صورة بطاقة المشتري + صورة بطاقة الضامن + إيصال.\n"
@@ -73,6 +74,7 @@ def _build_context(state: AgentState) -> str:
     intent = state.get("intent", "other")
     product_type = state.get("product_type") or "motorcycle"
     vehicles = state.get("vehicles", [])
+    total_count = state.get("total_count") or 0
     lead = state.get("lead", {})
     ask_clarification = state.get("ask_clarification")
 
@@ -108,11 +110,25 @@ def _build_context(state: AgentState) -> str:
             if plan.get("monthly_payment") is not None:
                 parts.append(f"   {plan['months']} months → {_fmt_price(plan['monthly_payment'])}/month")
     elif vehicles:
-        parts.append(f"Available {product_label} matching the request:")
+        shown = len(vehicles)
+        if total_count > shown:
+            parts.append(f"Showing {shown} of {total_count} available {product_label} (there are MORE in the catalog — tell the customer they can ask to see more):")
+        else:
+            parts.append(f"Available {product_label} matching the request ({shown} total — this is ALL we have):")
         for v in vehicles:
             parts.append(_format_vehicle(v))
     elif intent in ("browse", "filter", "details"):
-        parts.append(f"No {product_label} currently available matching these criteria.")
+        other_hint = state.get("other_types_hint")
+        if other_hint:
+            type_names = {"motorcycle": "موتوسيكلات (motorcycles)", "scooter": "اسكوترات (scooters)", "helmet": "خوذ (helmets)"}
+            others = ", ".join(f"{other_hint[k]} {type_names.get(k, k)}" for k in other_hint)
+            parts.append(
+                f"No more {product_label} beyond what was already shown. "
+                f"BUT we also have other products: {others}. "
+                f"Suggest these to the customer — e.g. 'مفيش موتوسيكلات تانية، بس عندنا كمان اسكوترات، تحب تشوفهم؟'"
+            )
+        else:
+            parts.append(f"No {product_label} currently available matching these criteria.")
 
     if intent == "complaint":
         if state.get("complaint_saved"):

@@ -37,9 +37,33 @@ def get_all_brands() -> set:
     rows = Motors.query.with_entities(Motors.company).distinct().all()
     return {r.company.lower().strip() for r in rows if r.company}
 
+
+def get_company_vehicle_count(company: str) -> int:
+    """Return how many vehicles belong to a company."""
+    return Motors.query.filter(
+        Motors.company.ilike(f"%{company.strip()}%"),
+        Motors.is_available == True,
+    ).count()
+
+
+def get_total_count(filters: dict = None) -> int:
+    """Return total number of available vehicles matching the filters."""
+    query = Motors.query.filter(Motors.is_available == True)
+    if filters:
+        if filters.get("type"):
+            query = query.filter(Motors.moto_type.ilike(f"%{filters['type']}%"))
+        if filters.get("company"):
+            query = query.filter(Motors.company.ilike(f"%{filters['company']}%"))
+        if filters.get("max_price") is not None:
+            query = query.filter(Motors.price <= float(filters["max_price"]))
+        if filters.get("min_price") is not None:
+            query = query.filter(Motors.price >= float(filters["min_price"]))
+    return query.count()
+
 def get_vehicles(
     filters: dict = None,
     limit: int = 6,
+    offset: int = 0,
     sort_by: str = None,
     ascending: bool = True,
 ) -> List[dict]:
@@ -64,7 +88,7 @@ def get_vehicles(
         col = col_map[sort_by]
         query = query.order_by(col.asc() if ascending else col.desc())
 
-    rows = query.limit(limit).all()
+    rows = query.offset(offset).limit(limit).all()
     return [_motor_to_dict(r) for r in rows]
 
 
@@ -151,9 +175,12 @@ def get_catalog_summary() -> dict:
     }
 
 
-def get_price_spread(filters: dict = None, count: int = 5) -> List[dict]:
-    """Return `count` vehicles evenly spread across the price range."""
-    query = Motors.query.filter(Motors.is_available == True, Motors.price.isnot(None))
+def get_price_spread(filters: dict = None, count: int = 4, offset: int = 0) -> List[dict]:
+    """Return `count` vehicles for browsing, randomized with price variety.
+    offset > 0: skip first `offset` vehicles (for 'show more' pagination)."""
+    import random
+
+    query = Motors.query.filter(Motors.is_available == True)
 
     if filters:
         if filters.get("type"):
@@ -165,16 +192,38 @@ def get_price_spread(filters: dict = None, count: int = 5) -> List[dict]:
         if filters.get("min_price") is not None:
             query = query.filter(Motors.price >= float(filters["min_price"]))
 
-    rows = query.order_by(Motors.price).all()
+    # Sort by price, put NULL prices at the end
+    rows = query.order_by(Motors.price.asc().nullslast()).all()
 
     if not rows:
         return []
+
+    # Pagination: skip already-shown vehicles
+    if offset > 0:
+        rows = rows[offset:]
+        if not rows:
+            return []
+
+    # Small set — return everything
     if len(rows) <= count:
         return [_motor_to_dict(r) for r in rows]
 
-    step = (len(rows) - 1) / (count - 1)
-    indices = sorted({round(i * step) for i in range(count)})
-    return [_motor_to_dict(rows[i]) for i in indices]
+    # Large set — random sample with price variety (one from each price tier)
+    tier_size = len(rows) // count
+    picked = set()
+    for i in range(count):
+        start = i * tier_size
+        end = start + tier_size if i < count - 1 else len(rows)
+        idx = random.randint(start, end - 1)
+        picked.add(idx)
+
+    remaining = [i for i in range(len(rows)) if i not in picked]
+    while len(picked) < count and remaining:
+        idx = random.choice(remaining)
+        picked.add(idx)
+        remaining.remove(idx)
+
+    return [_motor_to_dict(rows[i]) for i in sorted(picked)]
 
 
 def get_similar_vehicles(vehicle: dict, count: int = 3) -> List[dict]:

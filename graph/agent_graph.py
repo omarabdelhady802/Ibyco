@@ -2,8 +2,7 @@ from langgraph.graph import StateGraph, END
 
 from graph.state import AgentState
 from graph.nodes.intent_node import intent_node
-from graph.nodes.motorcycle_node import motorcycle_node
-from graph.nodes.scooter_node import scooter_node
+from graph.nodes.vehicle_node import vehicle_node
 from graph.nodes.helmet_node import helmet_node
 from graph.nodes.complaint_node import complaint_node
 from graph.nodes.booking_node import booking_node
@@ -31,13 +30,11 @@ def _route_after_intent(state: AgentState) -> str:
     if intent not in DATA_INTENTS:
         return "response"
 
-    if product_type == "scooter":
-        return "scooter"
     if product_type == "helmet":
         return "helmet"
 
-    # Default to motorcycle (covers None / explicit "motorcycle")
-    return "motorcycle"
+    # All vehicle types (motorcycle, scooter, or unknown) → unified vehicle node
+    return "vehicle"
 
 
 def build_graph():
@@ -45,8 +42,7 @@ def build_graph():
 
     # Nodes
     graph.add_node("intent", intent_node)
-    graph.add_node("motorcycle", motorcycle_node)
-    graph.add_node("scooter", scooter_node)
+    graph.add_node("vehicle", vehicle_node)
     graph.add_node("helmet", helmet_node)
     graph.add_node("complaint", complaint_node)
     graph.add_node("booking", booking_node)
@@ -61,8 +57,7 @@ def build_graph():
         "intent",
         _route_after_intent,
         {
-            "motorcycle": "motorcycle",
-            "scooter": "scooter",
+            "vehicle": "vehicle",
             "helmet": "helmet",
             "complaint": "complaint",
             "booking": "booking",
@@ -72,8 +67,7 @@ def build_graph():
     )
 
     # All category nodes feed into response
-    graph.add_edge("motorcycle", "response")
-    graph.add_edge("scooter", "response")
+    graph.add_edge("vehicle", "response")
     graph.add_edge("helmet", "response")
     graph.add_edge("complaint", "response")
     graph.add_edge("booking", "response")

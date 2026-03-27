@@ -4,7 +4,7 @@ No LLM — deterministic data fetching based on intent + filters.
 """
 import json
 from graph.state import AgentState
-from dashboard_services.vehicle_query_services import get_price_spread, get_vehicle_by_name, calculate_custom_installment, get_similar_vehicles
+from dashboard_services.vehicle_query_services import get_price_spread, get_vehicle_by_name, calculate_custom_installment, get_similar_vehicles, get_total_count
 from tools.motorcycle_tools import (
     search_motorcycles,
     motorcycle_by_monthly_budget,
@@ -19,15 +19,19 @@ def motorcycle_node(state: AgentState) -> dict:
 
     vehicles = []
     ask_clarification = None
+    show_more = filters.get("show_more", False)
+    PAGE_SIZE = 5
 
     def _resolve_name(filters: dict) -> str:
         """Combine company + vehicle_name for a richer search query."""
         parts = [filters.get("company", ""), filters.get("vehicle_name", "")]
         return " ".join(p for p in parts if p).strip()
 
+    total_count = get_total_count({"type": MOTO_TYPE})
+
     if intent == "installment" and not filters.get("vehicle_name") and not filters.get("max_installment_12"):
         ask_clarification = "vehicle_name"
-        return {"vehicles": [], "ask_clarification": ask_clarification}
+        return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count}
 
     # If a vehicle name is provided, always try to find it first (handles wrong routing)
     if filters.get("vehicle_name") and intent in ("details", "browse", "filter"):
@@ -35,7 +39,7 @@ def motorcycle_node(state: AgentState) -> dict:
         v = get_vehicle_by_name(name)
         if v:
             vehicles = [v] + get_similar_vehicles(v, count=3)
-            return {"vehicles": vehicles, "ask_clarification": ask_clarification}
+            return {"vehicles": vehicles, "ask_clarification": ask_clarification, "total_count": total_count}
 
     if intent == "details":
         name = _resolve_name(filters)
@@ -95,15 +99,17 @@ def motorcycle_node(state: AgentState) -> dict:
                 "min_price": filters.get("min_price"),
                 "company": filters.get("company"),
                 "transmission": filters.get("transmission"),
-                "limit": 5,
+                "limit": PAGE_SIZE,
             })
             vehicles = json.loads(raw)
         else:
             # No actual filter values — treat as browse (price spread)
-            vehicles = get_price_spread({"type": MOTO_TYPE}, count=5)
+            offset = PAGE_SIZE if show_more else 0
+            vehicles = get_price_spread({"type": MOTO_TYPE}, count=PAGE_SIZE, offset=offset)
 
     else:
         # browse — return a price-spread sample so different price points are visible
-        vehicles = get_price_spread({"type": MOTO_TYPE}, count=5)
+        offset = PAGE_SIZE if show_more else 0
+        vehicles = get_price_spread({"type": MOTO_TYPE}, count=PAGE_SIZE, offset=offset)
 
-    return {"vehicles": vehicles, "ask_clarification": ask_clarification}
+    return {"vehicles": vehicles, "ask_clarification": ask_clarification, "total_count": total_count}

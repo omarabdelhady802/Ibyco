@@ -7,6 +7,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from graph.state import AgentState
 from llm.gemini import get_gemini
+from dashboard_services.vehicle_query_services import get_all_brands, get_vehicle_by_name
 
 SYSTEM_PROMPT = """You are an intelligent assistant for "ibyco" motorcycle and accessories showroom.
 Your task is to analyse the customer's CURRENT message combined with the conversation history (Client history summary + Last bot reply) and extract intent and structured information.
@@ -40,7 +41,8 @@ Return JSON only (no extra text) in this format:
     "months": <number of installment months or null — e.g. 9 or 36>,
     "max_installment_12": <max acceptable monthly payment as number or null>,
     "transmission": "يدوي | أوتوماتيك | null",
-    "down_payment": <down payment amount in EGP as number or null — e.g. 5000>
+    "down_payment": <down payment amount in EGP as number or null — e.g. 5000>,
+    "show_more": <true if the customer is asking to see MORE products beyond what was already shown — e.g. "فيه تاني؟", "ورينى تاني", "show me more", "عندكم غير كده", "ايه كمان" — otherwise false>
   },
   "lead_info": {
     "name": "<customer name or null>",
@@ -147,7 +149,6 @@ def intent_node(state: AgentState) -> dict:
 
     # If vehicle_name exists but product_type is unknown, resolve from DB
     if not product_type and filters.get("vehicle_name"):
-        from dashboard_services.vehicle_query_services import get_vehicle_by_name
         v = get_vehicle_by_name(filters["vehicle_name"])
         if v and v.get("type"):
             vtype = v["type"]
@@ -160,20 +161,43 @@ def intent_node(state: AgentState) -> dict:
 
     company_val = filters.get("company", "").lower().strip()
 
+    # --- Company vs vehicle_name disambiguation ---
     if (not vehicle_nn
         and company_val
-        and company_val not in known_brands_set
         and intent in ("details", "installment", "compare", "browse", "filter")):
-        v = get_vehicle_by_name(filters["company"])
-        if v and v.get("type"):
-            vtype = v["type"]
-            filters["vehicle_name"] = v["name_en"]
-            if "اسكوتر" in vtype or "سكوتر" in vtype:
-                product_type = "scooter"
-            elif "خوذ" in vtype or "هيلم" in vtype:
-                product_type = "helmet"
-            else:
-                product_type = "motorcycle"
+
+        from dashboard_services.vehicle_query_services import get_company_vehicle_count
+        if company_val in known_brands_set:
+            # Known brand — but if it has only 1 vehicle, treat as specific vehicle lookup
+            count = get_company_vehicle_count(company_val)
+            if count == 1:
+                v = get_vehicle_by_name(filters["company"])
+                if v and v.get("type"):
+                    vtype = v["type"]
+                    filters["vehicle_name"] = v["name_en"]
+                    filters.pop("company", None)
+                    intent = "details"
+                    if "اسكوتر" in vtype or "سكوتر" in vtype:
+                        product_type = "scooter"
+                    elif "خوذ" in vtype or "هيلم" in vtype:
+                        product_type = "helmet"
+                    else:
+                        product_type = "motorcycle"
+            # else: multiple vehicles under this brand — keep as company filter (browse/filter)
+        else:
+            # NOT a known brand — maybe LLM confused a vehicle name for a company
+            v = get_vehicle_by_name(filters["company"])
+            if v and v.get("type"):
+                vtype = v["type"]
+                filters["vehicle_name"] = v["name_en"]
+                filters.pop("company", None)
+                intent = "details"
+                if "اسكوتر" in vtype or "سكوتر" in vtype:
+                    product_type = "scooter"
+                elif "خوذ" in vtype or "هيلم" in vtype:
+                    product_type = "helmet"
+                else:
+                    product_type = "motorcycle"
 
     lead_info = data.get("lead_info", {})
     existing_lead = state.get("lead", {})
