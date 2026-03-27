@@ -4,7 +4,7 @@ from typing import Optional
 from langchain_core.tools import tool
 from dashboard_services.vehicle_query_services import get_vehicles, get_vehicle_by_name
 
-HELMET_TYPE = "خوذة"
+HELMET_TYPE = "خوذ"
 
 
 def _clean(val):
