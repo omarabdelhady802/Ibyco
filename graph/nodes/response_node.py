@@ -286,8 +286,8 @@ updated paragraph snapshot here
                 "thinking_tokens": meta.get("output_token_details", {}).get("reasoning", 0),
             }
     except Exception as e:
-        response_text = f"Sorry, an error occurred: {e}"
-
+        print(f"[ERROR] response_node LLM call failed: {e}")
+        response_text = None
     # Aggregate intent + response tokens and compute cost
     intent_usage = state.get("intent_usage") or {}
     total_input    = (intent_usage.get("input_tokens", 0)    + usage.get("input_tokens", 0))
