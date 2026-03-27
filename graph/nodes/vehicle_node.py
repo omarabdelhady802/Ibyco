@@ -34,7 +34,12 @@ def vehicle_node(state: AgentState) -> dict:
     ask_clarification = None
     show_more = filters.get("show_more", False)
 
-    db_type = _TYPE_MAP.get(product_type)  # None when product_type is unknown
+    # When filtering by company/brand, show ALL vehicle types from that brand
+    # (e.g. Keeway has both scooters and motorcycles)
+    if filters.get("company"):
+        db_type = None
+    else:
+        db_type = _TYPE_MAP.get(product_type)  # None when product_type is unknown
 
     def _resolve_name(filters: dict) -> str:
         parts = [filters.get("company", ""), filters.get("vehicle_name", "")]
