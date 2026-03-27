@@ -44,10 +44,10 @@ def search_vehicles(
 @tool
 def vehicle_details(vehicle_name: str) -> str:
     """Get full details of a specific vehicle by name. Returns a JSON object."""
-    v = get_vehicle_by_name(vehicle_name)
-    if not v:
+    found = get_vehicle_by_name(vehicle_name)
+    if not found:
         return json.dumps({"error": "الموديل غير متوفر"}, ensure_ascii=False)
-    return _to_json([v])
+    return _to_json(found)
 
 
 @tool

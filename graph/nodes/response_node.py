@@ -74,7 +74,6 @@ def _build_context(state: AgentState) -> str:
     intent = state.get("intent", "other")
     product_type = state.get("product_type") or "motorcycle"
     vehicles = state.get("vehicles", [])
-    total_count = state.get("total_count") or 0
     lead = state.get("lead", {})
     ask_clarification = state.get("ask_clarification")
 
@@ -110,11 +109,7 @@ def _build_context(state: AgentState) -> str:
             if plan.get("monthly_payment") is not None:
                 parts.append(f"   {plan['months']} months → {_fmt_price(plan['monthly_payment'])}/month")
     elif vehicles:
-        shown = len(vehicles)
-        if total_count > shown:
-            parts.append(f"Showing {shown} of {total_count} available {product_label} (there are MORE in the catalog — tell the customer they can ask to see more):")
-        else:
-            parts.append(f"Available {product_label} matching the request ({shown} total — this is ALL we have):")
+        parts.append(f"Available {product_label} matching the request:")
         for v in vehicles:
             parts.append(_format_vehicle(v))
     elif intent in ("browse", "filter", "details"):
@@ -227,11 +222,11 @@ RULES FOR THE SUMMARY:
 - This summary is used by the AI in the NEXT turn to understand the conversation state.
 - REPLACE the old summary entirely — do NOT append to it or repeat old content.
 - Write it as a single clean paragraph, max 1000 chars, in English.
-- Keep only the LATEST value for each piece of info — if the customer changed their mind, keep the new value only.
+- KEEP all existing context (customer name, phone, preferences, previous interests).
+- When new data arrives (new vehicle name, new filters, new browse results), UPDATE those fields — replace old values with new ones, don't remove unrelated context.
+- If the customer asks about a new vehicle or browses again, update the vehicle/filter fields but keep customer info and other context.
 - Always mention these if known: intent, product type, vehicle name(s), down payment, months, budget, brand, customer name, customer phone, booking purpose, appointment date, what the bot last asked the customer.
-- If the current intent is 'other' or 'greeting', preserve all previous vehicle and filter context — do NOT wipe them.
-- If the customer just greeted or asked something off-topic, keep the previous vehicle/filters in the paragraph.
-- If the customer switched topic in this turn, clearly mark: "TOPIC SWITCHED — previous vehicle/filters no longer relevant."
+- If the current intent is 'other' or 'greeting', preserve all previous context as-is.
  
 
 EXISTING SUMMARY :
@@ -274,10 +269,13 @@ updated paragraph snapshot here
         if reply_match:
             response_text = reply_match.group(1).strip()
         else:
-            # LLM skipped opening tag — strip any leaked closing tags
-            response_text = re.sub(r"</?(REPLY|SUMMARY)>.*", "", raw, flags=re.DOTALL).strip()
+            # LLM skipped or misspelled tags — strip everything after <SUMMARY> and any XML-like tags
+            response_text = re.sub(r"<SUMMARY>.*", "", raw, flags=re.DOTALL).strip()
+            response_text = re.sub(r"</?[A-Z][A-Z_]*>", "", response_text).strip()
         if summary_match:
             new_summary = summary_match.group(1).strip()
+        # Final safety: remove any leaked tags from the customer-facing response
+        response_text = re.sub(r"</?[A-Z][A-Z_]*>", "", response_text).strip()
 
         meta = getattr(result, "usage_metadata", None) or getattr(result, "response_metadata", {}).get("token_usage", {})
         if meta:

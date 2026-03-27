@@ -149,9 +149,9 @@ def intent_node(state: AgentState) -> dict:
 
     # If vehicle_name exists but product_type is unknown, resolve from DB
     if not product_type and filters.get("vehicle_name"):
-        v = get_vehicle_by_name(filters["vehicle_name"])
-        if v and v.get("type"):
-            vtype = v["type"]
+        found = get_vehicle_by_name(filters["vehicle_name"])
+        if found and found[0].get("type"):
+            vtype = found[0]["type"]
             if "اسكوتر" in vtype or "سكوتر" in vtype:
                 product_type = "scooter"
             elif "خوذ" in vtype or "هيلم" in vtype:
@@ -171,8 +171,9 @@ def intent_node(state: AgentState) -> dict:
             # Known brand — but if it has only 1 vehicle, treat as specific vehicle lookup
             count = get_company_vehicle_count(company_val)
             if count == 1:
-                v = get_vehicle_by_name(filters["company"])
-                if v and v.get("type"):
+                found = get_vehicle_by_name(filters["company"])
+                if found and found[0].get("type"):
+                    v = found[0]
                     vtype = v["type"]
                     filters["vehicle_name"] = v["name_en"]
                     filters.pop("company", None)
@@ -186,8 +187,9 @@ def intent_node(state: AgentState) -> dict:
             # else: multiple vehicles under this brand — keep as company filter (browse/filter)
         else:
             # NOT a known brand — maybe LLM confused a vehicle name for a company
-            v = get_vehicle_by_name(filters["company"])
-            if v and v.get("type"):
+            found = get_vehicle_by_name(filters["company"])
+            if found and found[0].get("type"):
+                v = found[0]
                 vtype = v["type"]
                 filters["vehicle_name"] = v["name_en"]
                 filters.pop("company", None)

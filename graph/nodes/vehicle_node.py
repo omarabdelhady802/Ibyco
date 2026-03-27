@@ -68,9 +68,9 @@ def vehicle_node(state: AgentState) -> dict:
     # --- Vehicle name provided (and NOT show_more) → name lookup first ---
     if filters.get("vehicle_name") and intent not in ("installment",) and not show_more:
         name = _resolve_name(filters)
-        v = get_vehicle_by_name(name)
-        if v:
-            vehicles = [v] + get_similar_vehicles(v, count=3)
+        found = get_vehicle_by_name(name)
+        if found:
+            vehicles = found
             return {"vehicles": vehicles, "ask_clarification": ask_clarification, "total_count": total_count, "page_offset": 0}
 
     # ----- Intent handlers -----
@@ -81,27 +81,28 @@ def vehicle_node(state: AgentState) -> dict:
 
     elif intent == "details":
         name = _resolve_name(filters)
-        v = get_vehicle_by_name(name)
-        if v:
-            vehicles = [v] + get_similar_vehicles(v, count=3)
+        found = get_vehicle_by_name(name)
+        if found:
+            vehicles = found
 
     elif intent == "installment" and filters.get("vehicle_name"):
         name = _resolve_name(filters)
-        v = get_vehicle_by_name(name)
-        if not v:
+        found = get_vehicle_by_name(name)
+        if not found:
             ask_clarification = "vehicle_name1"
             return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count, "page_offset": offset}
+        v = found[0]  # use first match for installment calculation
         if "down_payment" not in filters:
             ask_clarification = "down_payment"
             return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count, "page_offset": offset}
 
         months = filters.get("months")
         down_payment = filters.get("down_payment", 0)
-        if months and v:
+        if months:
             months = int(months)
             calc = calculate_custom_installment(v, months, down_payment=down_payment)
             vehicles = [calc]
-        elif v:
+        else:
             vehicles = [
                 c for m in (6, 12, 18, 24)
                 for c in [calculate_custom_installment(v, m, down_payment=down_payment)]

@@ -99,8 +99,8 @@ def _normalize(s: str) -> str:
     return re.sub(r"[^a-z0-9\u0600-\u06ff]", "", s)
 
 
-def get_vehicle_by_name(name: str) -> Optional[dict]:
-    """Four-tier search (case-insensitive):
+def get_vehicle_by_name(name: str) -> List[dict]:
+    """Four-tier search (case-insensitive), returns ALL matches:
     1. SQL LIKE — consecutive substring in English or Arabic name.
     2. ALL query words are whole tokens in English name + company (exact multi-word match).
     3. MAJORITY (>=2/3) of words match across English + Arabic + company tokens.
@@ -109,16 +109,16 @@ def get_vehicle_by_name(name: str) -> Optional[dict]:
     q = name.lower().strip()
 
     # Tier 1 — SQL LIKE (full query as substring)
-    row = (
+    rows = (
         Motors.query
         .filter(
             (func.lower(Motors.english_name).like(f"%{q}%"))
             | (Motors.arabic_name.like(f"%{name.strip()}%"))
         )
-        .first()
+        .all()
     )
-    if row:
-        return _motor_to_dict(row)
+    if rows:
+        return [_motor_to_dict(r) for r in rows]
 
     # Tiers 2-4 load all rows once
     all_rows = Motors.query.all()
@@ -133,25 +133,24 @@ def get_vehicle_by_name(name: str) -> Optional[dict]:
             )
 
         # Tier 2 — ALL words match (precise)
-        for m in all_rows:
-            if all(w in _all_tokens(m) for w in words):
-                return _motor_to_dict(m)
+        results = [_motor_to_dict(m) for m in all_rows if all(w in _all_tokens(m) for w in words)]
+        if results:
+            return results
 
         # Tier 3 — MAJORITY match (>=2/3)
         threshold = max(1, math.ceil(len(words) * 2 / 3))
-        for m in all_rows:
-            toks = _all_tokens(m)
-            if sum(1 for w in words if w in toks) >= threshold:
-                return _motor_to_dict(m)
+        results = [_motor_to_dict(m) for m in all_rows if sum(1 for w in words if w in _all_tokens(m)) >= threshold]
+        if results:
+            return results
 
     # Tier 4 — normalized substring (English + Arabic names)
     q_norm = _normalize(q)
     if q_norm:
-        for m in all_rows:
-            if q_norm in _normalize(str(m.english_name)) or q_norm in _normalize(str(m.arabic_name)):
-                return _motor_to_dict(m)
+        results = [_motor_to_dict(m) for m in all_rows if q_norm in _normalize(str(m.english_name)) or q_norm in _normalize(str(m.arabic_name))]
+        if results:
+            return results
 
-    return None
+    return []
 
 
 def get_catalog_summary() -> dict:

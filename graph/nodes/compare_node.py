@@ -14,6 +14,22 @@ def _clean(v: dict) -> dict:
     }
 
 
+def _best_match(name: str, results: list) -> dict:
+    """Pick the result whose English or Arabic name is closest to the query."""
+    q = name.lower().strip()
+    # Prefer exact substring match in english_name
+    for r in results:
+        en = (r.get("name_en") or "").lower()
+        if q in en or en in q:
+            return r
+    # Then try arabic name
+    for r in results:
+        ar = r.get("name_ar") or ""
+        if q in ar or name.strip() in ar:
+            return r
+    return results[0]
+
+
 def compare_node(state: AgentState) -> dict:
     filters = state.get("filters", {})
     name1 = filters.get("vehicle_name", "")
@@ -22,8 +38,8 @@ def compare_node(state: AgentState) -> dict:
     vehicles = []
     for name in (name1, name2):
         if name:
-            v = get_vehicle_by_name(name)
-            if v:
-                vehicles.append(_clean(v))
+            found = get_vehicle_by_name(name)
+            if found:
+                vehicles.append(_clean(_best_match(name, found)))
 
     return {"vehicles": vehicles}
