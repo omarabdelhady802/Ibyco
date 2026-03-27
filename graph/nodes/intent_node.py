@@ -58,7 +58,7 @@ Intent definitions:
 - details: asks about a specific model BY NAME (e.g. "tell me about jet x", "specs of haojue k4")
 - installment: asks about installment plans, payment methods, or monthly payments FOR A SPECIFIC VEHICLE (not general questions about papers/documents)
 - compare: wants to compare two models (extract vehicle_name and vehicle_name_2)
-- booking: wants to book an appointment, visit, or buy (e.g. "I want to buy", "book a test ride","accept invetation to the showroom")
+- booking: wants to book an appointment, visit, or buy (e.g. "I want to buy", "book a test ride", "accept invitation to the showroom"). IMPORTANT: booking ONLY when the customer EXPLICITLY says yes to booking (e.g. "اه", "تمام", "اوك", "ماشي", "yes", "احجزلي"). If the customer replies with a product name or anything else after a booking suggestion, it is NOT booking — classify based on what they actually said.
 - complaint: complaining about a product, service, or bad experience
 - greeting: general greeting or small talk
 - other: general questions not directly about a specific product (e.g. offers, working hours, branches, oils, accessories, after-sales service)
