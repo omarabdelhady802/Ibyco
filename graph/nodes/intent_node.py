@@ -64,6 +64,7 @@ Intent definitions:
 - other: general questions not directly about a specific product (e.g. offers, working hours, branches, oils, accessories, after-sales service)
 
 Important rules:
+- ALWAYS write vehicle_name and vehicle_name_2 in English/Latin letters. If the customer uses Arabic letter names, transliterate them: اس ات → ST, اس ار → SR, سي جي → CG, جي ان → GN, ار كيه في → RKV, etc.
 - If the customer mentions a product NOT in the catalog (oils, accessories, spare parts) → intent = "other" even if a model name is mentioned
 - If asking about offers/discounts without mentioning a product → intent = "other"
 - If asking about working hours, branches, or address → intent = "other"
