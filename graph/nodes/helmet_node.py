@@ -1,35 +1,51 @@
 """
-Helmet Node: fetches helmets from DB and stores results in state.
+Helmet Node: fetches helmets from the helmets table and stores results in state.
 """
 from graph.state import AgentState
-from dashboard_services.vehicle_query_services import get_vehicles, get_vehicle_by_name
+from models.models import db, Helmets
 
-HELMET_TYPE = "خوذ"
+
+def _helmet_to_dict(h: Helmets) -> dict:
+    return {
+        "name_en":    h.english_name,
+        "name_ar":    h.arabic_name,
+        "company":    h.company,
+        "price":      h.price,
+        "type":       h.helmet_type,
+        "color":      h.colors,
+        "notes":      h.notes,
+        "available":  h.is_available,
+        "condition":  h.status,
+        "img_url":    h.img_url,
+    }
 
 
 def helmet_node(state: AgentState) -> dict:
     intent = state.get("intent", "browse")
     filters = state.get("filters", {})
 
-    vehicles = []
-    db_filters = {"type": HELMET_TYPE}
+    query = Helmets.query.filter(Helmets.is_available == True)
 
     if filters.get("company"):
-        db_filters["company"] = filters["company"]
+        query = query.filter(Helmets.company.ilike(f"%{filters['company']}%"))
     if filters.get("max_price"):
-        db_filters["max_price"] = filters["max_price"]
+        query = query.filter(Helmets.price <= float(filters["max_price"]))
     if filters.get("min_price"):
-        db_filters["min_price"] = filters["min_price"]
+        query = query.filter(Helmets.price >= float(filters["min_price"]))
 
     if intent == "details" and filters.get("vehicle_name"):
-        found = get_vehicle_by_name(filters["vehicle_name"])
-        vehicles = [v for v in found if "خوذ" in (v.get("type") or "")]
-    else:
-        vehicles = get_vehicles(db_filters, limit=5, sort_by="price")
+        name = filters["vehicle_name"].lower().strip()
+        query = query.filter(
+            (Helmets.english_name.ilike(f"%{name}%"))
+            | (Helmets.arabic_name.ilike(f"%{name}%"))
+        )
+
+    rows = query.order_by(Helmets.price.asc()).limit(10).all()
+    vehicles = [_helmet_to_dict(r) for r in rows]
 
     print(f"\n── Debug: helmet_node ──────────────────────")
-    print(f"  DB filters: {db_filters}")
-    print(f"  Vehicles found: {len(vehicles)}")
+    print(f"  Intent: {intent} | Filters: {filters}")
+    print(f"  Helmets found: {len(vehicles)}")
     for v in vehicles:
         print(f"    {v.get('name_en')} | {v.get('type')} | {v.get('price')}")
     print(f"───────────────────────────────────────────")
