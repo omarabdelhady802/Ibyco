@@ -15,6 +15,5 @@ def get_gemini() -> ChatGoogleGenerativeAI:
             google_api_key=os.getenv("GOOGLE_API_KEY"),
             temperature=0.1,
             max_tokens=4096,
-            thinking={"type": "disabled"},
         )
     return _llm

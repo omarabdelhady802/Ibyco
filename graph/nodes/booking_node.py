@@ -12,8 +12,8 @@ def booking_node(state: AgentState) -> dict:
     date    = lead.get("appointment_date")
     purpose = lead.get("booking_purpose")
 
-    # We need at least a client to save the booking
-    if not client:
+    # Don't save yet if we're missing key info — let LLM ask first
+    if not client or not date:
         return {"booking_saved": False}
 
     try:
