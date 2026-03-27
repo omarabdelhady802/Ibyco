@@ -11,6 +11,7 @@ services:
     ports:
       - "5000:5000"
     environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - SECRET_KEY=${SECRET_KEY:-change_this_secret_key_in_production}
       - SQLALCHEMY_DATABASE_URI=sqlite:////app/instance/Ibyco.db
@@ -31,6 +32,7 @@ services:
     restart: unless-stopped
     command: python -m service.redis_worker
     environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - REDIS_HOST=redis
       - SQLALCHEMY_DATABASE_URI=sqlite:////app/instance/Ibyco.db  # ✅ ADDED
