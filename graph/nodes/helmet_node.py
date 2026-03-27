@@ -1,14 +1,10 @@
 """
-Helmet Node: calls helmet tools and stores results in state.
-No LLM — deterministic data fetching based on intent + filters.
+Helmet Node: fetches helmets from DB and stores results in state.
 """
-import json
 from graph.state import AgentState
-from tools.helmet_tools import (
-    search_helmets,
-    helmet_details,
-    cheapest_helmets,
-)
+from dashboard_services.vehicle_query_services import get_vehicles, get_vehicle_by_name
+
+HELMET_TYPE = "خوذ"
 
 
 def helmet_node(state: AgentState) -> dict:
@@ -16,28 +12,26 @@ def helmet_node(state: AgentState) -> dict:
     filters = state.get("filters", {})
 
     vehicles = []
+    db_filters = {"type": HELMET_TYPE}
 
-    if intent == "details":
-        name = filters.get("vehicle_name", "")
-        raw = helmet_details.invoke({"name": name})
-        result = json.loads(raw)
-        if isinstance(result, list):
-            vehicles = result
-        elif isinstance(result, dict) and "error" not in result:
-            vehicles = [result]
+    if filters.get("company"):
+        db_filters["company"] = filters["company"]
+    if filters.get("max_price"):
+        db_filters["max_price"] = filters["max_price"]
+    if filters.get("min_price"):
+        db_filters["min_price"] = filters["min_price"]
 
-    elif intent == "filter":
-        raw = search_helmets.invoke({
-            "max_price": filters.get("max_price"),
-            "min_price": filters.get("min_price"),
-            "company": filters.get("company"),
-            "limit": 5,
-        })
-        vehicles = json.loads(raw)
-
+    if intent == "details" and filters.get("vehicle_name"):
+        found = get_vehicle_by_name(filters["vehicle_name"])
+        vehicles = [v for v in found if "خوذ" in (v.get("type") or "")]
     else:
-        # browse
-        raw = search_helmets.invoke({"limit": 5})
-        vehicles = json.loads(raw)
+        vehicles = get_vehicles(db_filters, limit=5, sort_by="price")
+
+    print(f"\n── Debug: helmet_node ──────────────────────")
+    print(f"  DB filters: {db_filters}")
+    print(f"  Vehicles found: {len(vehicles)}")
+    for v in vehicles:
+        print(f"    {v.get('name_en')} | {v.get('type')} | {v.get('price')}")
+    print(f"───────────────────────────────────────────")
 
     return {"vehicles": vehicles}
