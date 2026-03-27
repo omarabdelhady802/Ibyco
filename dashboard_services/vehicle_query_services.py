@@ -164,6 +164,22 @@ def get_vehicle_by_name(name: str) -> List[dict]:
         if results:
             return results
 
+    # Tier 5 — ALL query words are substrings of the normalized name
+    # Handles "joye max" matching "JOYMAX", "joy max" matching "JOYMAX"
+    if words:
+        def _name_norm(m):
+            return _normalize(str(m.english_name)) + _normalize(str(m.arabic_name))
+        # Try full words first
+        results = [_motor_to_dict(m) for m in all_rows if all(w in _name_norm(m) for w in words)]
+        if results:
+            return results
+        # Try with first 3 chars of each word (fuzzy prefix match)
+        prefixes = [w[:3] for w in words if len(w) >= 3]
+        if prefixes:
+            results = [_motor_to_dict(m) for m in all_rows if all(p in _name_norm(m) for p in prefixes)]
+            if results:
+                return results
+
     return []
 
 
