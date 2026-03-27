@@ -40,10 +40,12 @@ def search_helmets(
 @tool
 def helmet_details(name: str) -> str:
     """Get full details of a specific helmet by name. Returns a JSON object."""
-    v = get_vehicle_by_name(name)
-    if not v:
+    found = get_vehicle_by_name(name)
+    # Filter to helmets only
+    helmets = [v for v in found if "خوذ" in (v.get("type") or "")]
+    if not helmets:
         return json.dumps({"error": "هذا الموديل غير متوفر"}, ensure_ascii=False)
-    return _to_json([v])
+    return _to_json(helmets)
 
 
 @tool
