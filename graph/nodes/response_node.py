@@ -192,14 +192,18 @@ def response_node(state: AgentState) -> dict:
 
     sys_content = BOOKING_PROMPT if intent == "booking" else SYSTEM_PROMPT
 
-    # Give the LLM client context so it can personalise the reply
-    if old_summary:
-        sys_content += f"\n\nClient history summary:\n{old_summary}"
-    if last_bot_reply:
-        sys_content += f"\nYour last reply to this client:\n{last_bot_reply}"
+    # For greetings, keep it clean — don't push old vehicle context
+    if intent == "greeting":
+        sys_content += "\n\nThe customer is greeting you. Reply with a warm greeting and ask how you can help. Do NOT mention any specific products or previous conversations."
+    else:
+        # Give the LLM client context so it can personalise the reply
+        if old_summary:
+            sys_content += f"\n\nClient history summary:\n{old_summary}"
+        if last_bot_reply:
+            sys_content += f"\nYour last reply to this client:\n{last_bot_reply}"
 
-    if context:
-        sys_content += f"\n\nAvailable data:\n{context}"
+        if context:
+            sys_content += f"\n\nAvailable data:\n{context}"
 
     sys_content += f"""
 
