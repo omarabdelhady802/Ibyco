@@ -109,16 +109,18 @@ def get_vehicle_by_name(name: str) -> List[dict]:
     q = name.lower().strip()
 
     # Tier 1 — SQL LIKE (full query as substring)
-    rows = (
-        Motors.query
-        .filter(
-            (func.lower(Motors.english_name).like(f"%{q}%"))
-            | (Motors.arabic_name.like(f"%{name.strip()}%"))
+    # Skip for very short queries (<=2 chars) — too many false positives (e.g. "st" matches "Vieste")
+    if len(q) > 2:
+        rows = (
+            Motors.query
+            .filter(
+                (func.lower(Motors.english_name).like(f"%{q}%"))
+                | (Motors.arabic_name.like(f"%{name.strip()}%"))
+            )
+            .all()
         )
-        .all()
-    )
-    if rows:
-        return [_motor_to_dict(r) for r in rows]
+        if rows:
+            return [_motor_to_dict(r) for r in rows]
 
     # Tiers 2-4 load all rows once
     all_rows = Motors.query.all()
