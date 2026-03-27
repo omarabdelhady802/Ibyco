@@ -22,7 +22,7 @@ _TYPE_MAP = {
     "scooter":    "اسكوتر",
 }
 
-PAGE_SIZE = 4
+PAGE_SIZE = 5
 
 
 def vehicle_node(state: AgentState) -> dict:
@@ -54,7 +54,7 @@ def vehicle_node(state: AgentState) -> dict:
         return {"vehicles": [], "ask_clarification": ask_clarification, "total_count": total_count}
 
     # --- Vehicle name provided → always try name lookup first (type-agnostic) ---
-    if filters.get("vehicle_name") and intent in ("details", "browse", "filter"):
+    if filters.get("vehicle_name") and intent not in ("installment",):
         name = _resolve_name(filters)
         v = get_vehicle_by_name(name)
         if v:
@@ -126,13 +126,13 @@ def vehicle_node(state: AgentState) -> dict:
         else:
             offset = PAGE_SIZE if show_more else 0
             type_filter = {"type": db_type} if db_type else {}
-            vehicles = get_price_spread(type_filter, count=PAGE_SIZE, offset=offset)
+            vehicles = get_vehicles(type_filter, limit=PAGE_SIZE, offset=offset, sort_by="price")
 
     else:
         # browse
         offset = PAGE_SIZE if show_more else 0
         type_filter = {"type": db_type} if db_type else {}
-        vehicles = get_price_spread(type_filter, count=PAGE_SIZE, offset=offset)
+        vehicles = get_vehicles(type_filter, limit=PAGE_SIZE, offset=offset, sort_by="price")
 
     # When show_more returns nothing (or browse with no results), tell response about ALL other available types
     other_types_hint = None

@@ -177,6 +177,19 @@ def response_node(state: AgentState) -> dict:
     message = state["current_message"]
     intent = state.get("intent", "other")
 
+    vehicles = state.get("vehicles", [])
+    print(
+        f"\n── Debug: response_node input ─────────────────\n"
+        f"  Intent: {intent} | Product type: {state.get('product_type')}\n"
+        f"  Filters: {state.get('filters', {})}\n"
+        f"  Vehicles ({len(vehicles)}):"
+    )
+    for i, v in enumerate(vehicles):
+        print(f"    [{i+1}] {v.get('name_en', v.get('name_ar', '?'))} — {v.get('type', '?')} — {v.get('price', '?')}")
+    print(f"  Total count: {state.get('total_count')}")
+    print(f"  Ask clarification: {state.get('ask_clarification')}")
+    print(f"───────────────────────────────────────────────")
+
     try:
         context = _build_context(state)
     except Exception:
