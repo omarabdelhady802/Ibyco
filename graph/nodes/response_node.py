@@ -32,8 +32,9 @@ BOOKING_PROMPT = (
     f'You are a sales assistant at "ibyco" showroom.\n'
     f"Reply ONLY in Egyptian Arabic or English — NEVER mix in any other language.\n"
     f"Detect the language from the customer's message and reply entirely in that language.\n"
-    f"The customer wants to book a visit or test ride. "
-    f"Ask them when they'd like to come (preferred day/time) and what they're interested in.\n"
+    f"The customer wants to book a visit or test ride.\n"
+    f"IMPORTANT: Friday (الجمعة) is a DAY OFF — the showroom is CLOSED on Fridays. "
+    f"If the customer picks Friday, politely tell them it's closed and suggest Saturday or another day.\n"
     f"{_SHOWROOM}"
 )
 
@@ -138,16 +139,8 @@ def _build_context(state: AgentState) -> str:
             parts.append(f"Booking has been saved successfully. Date: {date or 'not specified yet'}, Purpose: {purpose or 'showroom visit'}.")
             parts.append("Confirm to the customer that their booking is received and the team will contact them to confirm.")
         else:
-            # Missing info — ask the customer
-            has_date = bool(lead.get("appointment_date"))
-            has_name = bool(lead.get("name"))
-            missing = []
-            if not has_name:
-                missing.append("their name (اسمهم)")
-            if not has_date:
-                missing.append("preferred date/time (الميعاد المناسب)")
-            parts.append(f"The customer wants to book a visit/appointment. We still need: {', '.join(missing)}.")
-            parts.append("Ask the customer nicely for the missing information. Mention the showroom address and working hours.")
+            parts.append("The customer wants to book a visit/appointment but hasn't mentioned a date or time yet.")
+            parts.append("Ask ONLY for the preferred date/time. Keep it short — ONE question only, don't repeat showroom info if already mentioned.")
 
     return "\n".join(parts)
 
