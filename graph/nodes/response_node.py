@@ -332,7 +332,7 @@ updated paragraph snapshot here
     booking_stage = state.get("booking_stage")
     lead = state.get("lead", {})
     if intent == "booking":
-        if lead.get("name") and lead.get("phone"):
+        if state.get("booking_saved"):
             booking_stage = "confirmed"
         else:
             booking_stage = "collecting_info"
