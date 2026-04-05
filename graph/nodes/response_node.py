@@ -10,7 +10,7 @@ from dashboard_services.client_services import ClientServices
 
 _SHOWROOM = (
     "ibyco  motorcycles & accessories showroom | Alexandria, 12 St 302 off Bahaa El-Din El-Ghatoury, Smouha | "
-    "Daily 2PM-11PM (Friday closed) | WhatsApp: 01505989502 / 01505989506"
+    "Daily 2PM-11PM (Friday closed) | Phone Numbers: 01147985063"
 )
 
 SYSTEM_PROMPT = (
@@ -41,12 +41,12 @@ BOOKING_PROMPT = (
 BOOKING_CONFIRMED_AR = (
     "تم استلام طلب حجزك بنجاح!\n"
     "سيتواصل معك فريق ibyco قريباً لتأكيد الموعد.\n\n"
-    "يسعدنا خدمتك — للتواصل الفوري: 01505989502"
+    "يسعدنا خدمتك — للتواصل الفوري: 01147985063"
 )
 BOOKING_CONFIRMED_EN = (
     "Your booking request has been received!\n"
     "The ibyco team will contact you shortly to confirm.\n\n"
-    "You can also reach us directly: 01505989502"
+    "You can also reach us directly: 01147985063"
 )
 
 

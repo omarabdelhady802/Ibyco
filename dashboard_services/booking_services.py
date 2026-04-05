@@ -84,11 +84,11 @@ class BookingServices:
         if client:
             if form.get("info"):
                 client.info = form.get("info")
-            if form.get("has_purchased") is not None:
-                from datetime import datetime, timezone
-                client.has_purchased = form.get("has_purchased") == "true"
-                if client.has_purchased:
-                    client.purchase_date = datetime.now(timezone.utc)
+            
+            from datetime import datetime, timezone
+            client.has_purchased = "has_purchased" in form  # True if checked, False if unchecked
+            if client.has_purchased and not client.purchase_date:
+                client.purchase_date = datetime.now(timezone.utc)
 
         db.session.commit()
 
