@@ -15,6 +15,8 @@ from parsers.whatsapp import parse_whatsapp_message
 from service.redis_worker import add_to_buffer, start_redis_listener 
 from service.message_processor import process_message
 from dashboard_services.showroom_page_services import ShowroomPageServices
+from notified_center.Email_sender import EmailClient
+email_client = EmailClient()
 
 
 
@@ -649,6 +651,11 @@ def whatsapp_webhook():
 
             except Exception as e:
                 print(f"[ERROR] Webhook processing failed: {e}")
+                email_client.send_email(
+                    subject="[WEBHOOK ERROR] WhatsApp Webhook Processing Failure in app.py file",
+                    body=f"An error occurred while processing the WhatsApp webhook:\n\nPayload:\n{payload}\n\nError:\n{str(e)}"
+                )
+
 
     # الرد بـ 200 دايماً لشركة Meta
     return "OK", 200

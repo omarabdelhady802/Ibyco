@@ -4,10 +4,12 @@ Intent Node: Gemini Flash (via OpenRouter) classifies the user message into inte
 import json
 import re
 from langchain_core.messages import HumanMessage, SystemMessage
-
+import traceback
 from graph.state import AgentState
 from llm.gemini import get_gemini
 from dashboard_services.vehicle_query_services import get_all_brands, get_vehicle_by_name
+from notified_center.Email_sender import EmailClient
+email_client = EmailClient()
 
 SYSTEM_PROMPT = """You are an intelligent assistant for "ibyco" motorcycle and accessories showroom.
 Your task is to analyse the customer's CURRENT message combined with the conversation history (Client history summary + Last bot reply) and extract intent and structured information.
@@ -131,11 +133,16 @@ def intent_node(state: AgentState) -> dict:
             }
     except Exception:
         data = {}
+        email_client.send_email(
+        subject="[INTENT NODE ERROR] Intent Extraction Failure in intent_node file",
+        body=f"An error occurred while extracting intentError:\n{traceback.format_exc()}"
+    )
 
     intent = data.get("intent", "other")
     product_type = data.get("product_type") or None
     if product_type == "null":
         product_type = None
+    
 
 
     

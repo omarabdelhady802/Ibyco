@@ -7,7 +7,9 @@ from graph.state import AgentState
 from llm.gemini import get_gemini
 from dashboard_services.vehicle_query_services import _fmt_price, _safe, _has_value
 from dashboard_services.client_services import ClientServices
-
+import traceback
+from notified_center.Email_sender import EmailClient
+email_client = EmailClient()
 _SHOWROOM = (
     "ibyco  motorcycles & accessories showroom | Alexandria, 12 St 302 off Bahaa El-Din El-Ghatoury, Smouha | "
     "Daily 2PM-11PM (Friday closed) | Phone Numbers: 01147985063"
@@ -328,6 +330,10 @@ updated paragraph snapshot here
         )
     except Exception:
         pass  # never crash the response over a DB write
+        email_client.send_email(
+            subject="[RESPONSE NODE ERROR] Client DB Update Failure in response_node file",
+            body=f"An error occurred while updating the client turn in the database:\n\nClient: {client}\nMessage: {message}\nResponse: {response_text}\n\nError:\n{traceback.format_exc()}"
+        )
 
     booking_stage = state.get("booking_stage")
     lead = state.get("lead", {})

@@ -2,6 +2,8 @@ from models.models import ShowroomPage, Client, db
 from graph.agent_graph import get_agent
 from graph.agent_response import AgentResponse
 from sqlalchemy.exc import IntegrityError
+from notified_center.Email_sender import EmailClient
+email_client = EmailClient()
 
 
 class IncomingMessage:
@@ -69,3 +71,7 @@ def process_message(message):
             handler.send(message.sender_id, reply)
     except Exception as e:
         print(f"[PROCESSOR ERROR] {e}")
+        email_client.send_email(
+            subject="[PROCESSOR ERROR] Message Processing Failure in process_message file",
+            body=f"An error occurred while processing a message from {message.sender_id}:\n\n{str(e)}"
+        )

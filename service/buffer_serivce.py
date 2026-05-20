@@ -1,4 +1,6 @@
 import redis
+from notified_center.Email_sender import EmailClient
+email_client = EmailClient()
 
 # الاتصال بـ Redis داخل Docker
 r = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
@@ -30,3 +32,7 @@ def add_to_buffer(platform_id, page_id, sender_id, text):
         
     except Exception as e:
         print(f"[ERROR] Redis Buffer Error: {e}")
+        email_client.send_email(
+            subject="[ERROR] Redis Buffer Error in add_to_buffer function on file buffer_service.py",
+            body=f"An error occurred while adding to Redis buffer for sender {sender_id}:\n\n{str(e)}"
+        )

@@ -1,6 +1,8 @@
 import os
 import redis
 from service.message_processor import process_message, IncomingMessage
+from notified_center.Email_sender import EmailClient
+email_client = EmailClient()
 
 r = redis.StrictRedis(host='redis', port=6379, db=0, decode_responses=True)
 
@@ -69,7 +71,12 @@ def handle_expired_buffer(key):
             process_message(incoming_msg)
 
     except Exception as e:
+
         print(f"[WORKER ERROR] {e}")
+        email_client.send_email(
+            subject="[WORKER ERROR] Redis Worker Failure in redis_worker file",
+            body=f"An error occurred in the Redis worker:\n\n{str(e)}"
+        )
 
 
 

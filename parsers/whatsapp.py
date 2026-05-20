@@ -1,6 +1,8 @@
 import logging
 import traceback
 from service.message_processor import IncomingMessage
+from notified_center.Email_sender import EmailClient
+email_client = EmailClient()
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +67,10 @@ def parse_whatsapp_message(payload):
     except Exception as e:
         full_error = f"Fatal Error in parse_whatsapp_message:\n{traceback.format_exc()}\nPayload Data: {payload}"
         logger.critical(full_error)
+        email_client.send_email(
+            subject="[PARSER ERROR] WhatsApp Message Parsing Failure in whatsapp.py file",
+            body=full_error
+        )
         
         # إرسال إيميل في حالة الخطأ الجسيم فقط
         
